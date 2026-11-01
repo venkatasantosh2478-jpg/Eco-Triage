@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
   ActivityLogItem,
   AlertItem,
@@ -6,7 +6,6 @@ import {
   HeroProfile,
   Incident,
   Language,
-  SeverityLevel,
   TextSize,
   UserProfile,
   UserRole,
@@ -19,16 +18,37 @@ import {
   loadHeroes,
   loadIncidents,
   resetAllDataToDefault,
-  SAMPLE_CREWS,
-  SAMPLE_USERS,
-  saveActivityLogs,
   saveAlerts,
   saveHelpPoints,
   saveHeroes,
   saveIncidents,
 } from '../utils/storage.ts';
 import { calculateRuleScore, getSeverity, toggleHeroSaluteState } from '../utils/rules.ts';
-import { OperatingMode, EmergencyContact, VolunteerRegistration, SAMPLE_EMERGENCY_CONTACTS } from '../utils/modeConfig.ts';
+import {
+  DEFAULT_MODE_ASSETS,
+  DEFAULT_MODE_CONTENT,
+  DEFAULT_MODE_FEATURES,
+  DEFAULT_MODE_HISTORY,
+  DEFAULT_MODE_SETTINGS,
+  DEFAULT_VOLUNTEER_TASKS,
+  EmergencyContact,
+  getModeAssetForSlot,
+  getModeContentText,
+  isModeFeatureEnabled,
+  ModeAssetRecord,
+  ModeAssetSlotKey,
+  ModeContentKey,
+  ModeContentRecord,
+  ModeFeatureKey,
+  ModeFeatureRecord,
+  ModeHistoryRecord,
+  ModeSettingsTable,
+  OperatingMode,
+  resolveEffectiveMode,
+  SAMPLE_EMERGENCY_CONTACTS,
+  VolunteerRegistration,
+  VolunteerTaskRequest,
+} from '../utils/modeConfig.ts';
 
 interface AppContextType {
   // Navigation
@@ -37,20 +57,87 @@ interface AppContextType {
   selectedIncidentId: string | null;
   setSelectedIncidentId: (id: string | null) => void;
 
-  // Dual Operating Mode
-  operatingMode: OperatingMode;
+  // Dual Operating Mode (Section 14)
+  operatingMode: OperatingMode; // Effective mode (respects Admin Preview-As)
+  globalServerMode: OperatingMode; // Underlying server mode
+  previewMode: OperatingMode | null;
+  setPreviewMode: (mode: OperatingMode | null) => void;
   modeSince: string;
   modeReason: string;
   disasterName: string;
-  setOperatingMode: (mode: OperatingMode, reason: string, disasterName?: string) => void;
+  expectedEnd: string;
+  emergencyBroadcastMessage: string;
+  emergencyBroadcastExpiry: string;
+  scheduledSwitch: ModeSettingsTable['scheduledSwitch'];
+  modeHistory: ModeHistoryRecord[];
+  modeFeatures: ModeFeatureRecord[];
+  modeAssets: ModeAssetRecord[];
+  modeContent: ModeContentRecord[];
+  usingCachedMode: boolean;
+  lastModeUpdatedTime: string;
+  modeSwitchError: string | null;
+  clearModeSwitchError: () => void;
+  ariaLiveAnnouncement: string;
+  hasActiveWarningPrompt: boolean;
+  dismissWarningPrompt: () => void;
 
-  // Emergency Contacts & Volunteers
+  // Mode Actions & Helpers
+  setOperatingMode: (
+    mode: OperatingMode,
+    reason: string,
+    disasterName?: string,
+    expectedEnd?: string
+  ) => Promise<boolean>;
+  scheduleModeSwitch: (
+    targetMode: OperatingMode,
+    switchAt: string,
+    reason: string,
+    disasterName?: string
+  ) => Promise<boolean>;
+  cancelScheduledSwitch: () => Promise<boolean>;
+  saveModeFeatures: (updated: ModeFeatureRecord[]) => Promise<boolean>;
+  saveModeAsset: (payload: {
+    slot_key: ModeAssetSlotKey;
+    mode: OperatingMode;
+    resetToDefault?: boolean;
+    image_url_desktop?: string;
+    image_url_mobile?: string;
+    alt_en?: string;
+    alt_te?: string;
+    alt_hi?: string;
+    credit?: string;
+    licence?: string;
+    rightsConfirmed?: boolean;
+  }) => Promise<{ ok: boolean; error?: string }>;
+  saveModeContent: (
+    updates: ModeContentRecord[],
+    broadcastMessage?: string,
+    broadcastExpiry?: string
+  ) => Promise<boolean>;
+  isFeatureOn: (key: ModeFeatureKey) => boolean;
+  getAsset: (slot: ModeAssetSlotKey) => ModeAssetRecord;
+  getContent: (key: ModeContentKey) => string;
+  isModeModalOpen: boolean;
+  setIsModeModalOpen: (open: boolean) => void;
+
+  // Emergency Contacts & Volunteers & Tasks
   emergencyContacts: EmergencyContact[];
   volunteers: VolunteerRegistration[];
+  volunteerTasks: VolunteerTaskRequest[];
   addEmergencyContact: (contact: Omit<EmergencyContact, 'id' | 'updatedAt'>) => void;
   updateContactStatus: (id: string, status: EmergencyContact['status']) => void;
   registerVolunteer: (vol: Omit<VolunteerRegistration, 'id' | 'createdAt' | 'status'>) => void;
   updateVolunteerStatus: (id: string, status: VolunteerRegistration['status']) => void;
+  postVolunteerTask: (title: string, area: string, skillsNeeded: string) => void;
+  respondToVolunteerTask: (taskId: string, name: string, phone: string) => void;
+  confirmVolunteerForTask: (taskId: string, phone: string) => void;
+
+  // Sound/Vibration, Low-data & Citizen Feedback (Section 14.4)
+  soundVibrationEnabled: boolean;
+  setSoundVibrationEnabled: (enabled: boolean) => void;
+  lowDataMode: boolean;
+  setLowDataMode: (enabled: boolean) => void;
+  submitRoadClearFeedback: (incidentId: string, isClear: boolean) => void;
 
   // Language & Accessibility
   language: Language;
@@ -118,39 +205,624 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activePage, setActivePage] = useState<string>('home');
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
+  const [isModeModalOpen, setIsModeModalOpen] = useState<boolean>(false);
 
-  // Dual Operating Mode state
-  const [operatingMode, setOperatingModeState] = useState<OperatingMode>(() => {
-    return (localStorage.getItem('ecotriage_operating_mode') as OperatingMode) || 'daily';
+  // User Profile & Roles
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
+    try {
+      const raw = localStorage.getItem('ecotriage_user');
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
   });
+  const [currentRole, setCurrentRole] = useState<UserRole>(() => {
+    return currentUser ? currentUser.role : 'public';
+  });
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  // Language & Accessibility
+  const [language, setLanguageState] = useState<Language>(() => {
+    return (localStorage.getItem('ecotriage_lang') as Language) || 'en';
+  });
+  const [simpleWords, setSimpleWordsState] = useState<boolean>(() => {
+    const val = localStorage.getItem('ecotriage_simple_words');
+    return val !== null ? val === 'true' : true;
+  });
+  const [textSize, setTextSizeState] = useState<TextSize>(() => {
+    return (localStorage.getItem('ecotriage_text_size') as TextSize) || 'normal';
+  });
+
+  // Connectivity
+  const [networkStatus, setNetworkStatusState] = useState<'Online' | '2G' | 'Offline'>(() => {
+    return typeof navigator !== 'undefined' && !navigator.onLine ? 'Offline' : 'Online';
+  });
+  const [lastSyncedTime, setLastSyncedTime] = useState<string>('Just now');
+
+  // Dual Mode State (Section 14)
+  const [globalServerMode, setGlobalServerMode] = useState<OperatingMode>(() => {
+    return (localStorage.getItem('ecotriage_operating_mode') as OperatingMode) || DEFAULT_MODE_SETTINGS.app_mode;
+  });
+  const [previewMode, setPreviewMode] = useState<OperatingMode | null>(null);
   const [modeSince, setModeSince] = useState<string>(() => {
-    return localStorage.getItem('ecotriage_mode_since') || '10:42 AM';
+    return localStorage.getItem('ecotriage_mode_since') || DEFAULT_MODE_SETTINGS.modeSince;
   });
   const [modeReason, setModeReason] = useState<string>(() => {
-    return localStorage.getItem('ecotriage_mode_reason') || 'Normal operations';
+    return localStorage.getItem('ecotriage_mode_reason') || DEFAULT_MODE_SETTINGS.modeReason;
   });
   const [disasterName, setDisasterName] = useState<string>(() => {
-    return localStorage.getItem('ecotriage_disaster_name') || 'Cyclone, coastal Visakhapatnam';
+    return localStorage.getItem('ecotriage_disaster_name') || DEFAULT_MODE_SETTINGS.disasterName;
+  });
+  const [expectedEnd, setExpectedEnd] = useState<string>(() => {
+    return localStorage.getItem('ecotriage_expected_end') || '';
+  });
+  const [emergencyBroadcastMessage, setEmergencyBroadcastMessage] = useState<string>(() => {
+    return (
+      localStorage.getItem('ecotriage_broadcast_msg') ||
+      DEFAULT_MODE_SETTINGS.emergencyBroadcastMessage ||
+      ''
+    );
+  });
+  const [emergencyBroadcastExpiry, setEmergencyBroadcastExpiry] = useState<string>(() => {
+    return (
+      localStorage.getItem('ecotriage_broadcast_exp') ||
+      DEFAULT_MODE_SETTINGS.emergencyBroadcastExpiry ||
+      '23:59 IST'
+    );
+  });
+  const [scheduledSwitch, setScheduledSwitch] = useState<ModeSettingsTable['scheduledSwitch']>(null);
+  const [modeHistory, setModeHistory] = useState<ModeHistoryRecord[]>(() => {
+    try {
+      const raw = localStorage.getItem('ecotriage_mode_history');
+      return raw ? JSON.parse(raw) : DEFAULT_MODE_HISTORY;
+    } catch {
+      return DEFAULT_MODE_HISTORY;
+    }
+  });
+  const [modeFeatures, setModeFeatures] = useState<ModeFeatureRecord[]>(() => {
+    try {
+      const raw = localStorage.getItem('ecotriage_mode_features');
+      return raw ? JSON.parse(raw) : DEFAULT_MODE_FEATURES;
+    } catch {
+      return DEFAULT_MODE_FEATURES;
+    }
+  });
+  const [modeAssets, setModeAssets] = useState<ModeAssetRecord[]>(() => {
+    try {
+      const raw = localStorage.getItem('ecotriage_mode_assets_v2');
+      return raw ? JSON.parse(raw) : DEFAULT_MODE_ASSETS;
+    } catch {
+      return DEFAULT_MODE_ASSETS;
+    }
+  });
+  const [modeContent, setModeContent] = useState<ModeContentRecord[]>(() => {
+    try {
+      const raw = localStorage.getItem('ecotriage_mode_content');
+      return raw ? JSON.parse(raw) : DEFAULT_MODE_CONTENT;
+    } catch {
+      return DEFAULT_MODE_CONTENT;
+    }
   });
 
-  const setOperatingMode = (mode: OperatingMode, reason: string, name?: string) => {
-    setOperatingModeState(mode);
-    const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    setModeSince(nowStr);
-    setModeReason(reason);
-    if (name) setDisasterName(name);
+  const [usingCachedMode, setUsingCachedMode] = useState<boolean>(false);
+  const [lastModeUpdatedTime, setLastModeUpdatedTime] = useState<string>(() => {
+    return localStorage.getItem('ecotriage_mode_last_updated') || '10:42';
+  });
+  const [modeSwitchError, setModeSwitchError] = useState<string | null>(null);
+  const [ariaLiveAnnouncement, setAriaLiveAnnouncement] = useState<string>('');
+  const [warningPromptDismissed, setWarningPromptDismissed] = useState<boolean>(false);
 
-    localStorage.setItem('ecotriage_operating_mode', mode);
-    localStorage.setItem('ecotriage_mode_since', nowStr);
-    localStorage.setItem('ecotriage_mode_reason', reason);
-    if (name) localStorage.setItem('ecotriage_disaster_name', name);
+  // Sound/vibration & Low-data state (Section 14.4)
+  const [soundVibrationEnabled, setSoundVibrationEnabled] = useState<boolean>(false);
+  const [lowDataMode, setLowDataMode] = useState<boolean>(false);
 
-    const announcement = mode === 'emergency' ? 'Emergency mode is now on.' : 'Daily mode is now on.';
-    showToast(announcement);
-    addActivityLog(currentUser ? currentUser.name : 'Admin', `Switched global system mode to ${mode.toUpperCase()}: ${reason}`);
+  // Effective Operating Mode (supports Admin "Preview as" bar)
+  const operatingMode = resolveEffectiveMode(globalServerMode, previewMode, currentRole);
+
+  // Data states
+  const [incidents, setIncidents] = useState<Incident[]>(() => loadIncidents());
+  const [helpPoints, setHelpPoints] = useState<HelpPoint[]>(() => loadHelpPoints());
+  const [alerts, setAlerts] = useState<AlertItem[]>(() => loadAlerts());
+  const [heroes, setHeroes] = useState<HeroProfile[]>(() => loadHeroes());
+  const [activityLogs, setActivityLogs] = useState<ActivityLogItem[]>(() => loadActivityLogs());
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [avgAiTimeMs, setAvgAiTimeMs] = useState<number>(1420);
+
+  const showToast = useCallback((msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage((prev) => (prev === msg ? null : prev));
+    }, 4000);
+  }, []);
+
+  const appendLog = useCallback((who: string, what: string) => {
+    addActivityLog(who, what);
+    setActivityLogs(loadActivityLogs());
+  }, []);
+
+  // Preload essential images for both modes so offline mode switching is instant (Section 14.5 & 14.8)
+  useEffect(() => {
+    const heroDaily = DEFAULT_MODE_ASSETS.find((a) => a.slot_key === 'home_hero' && a.mode === 'daily');
+    const heroEmerg = DEFAULT_MODE_ASSETS.find((a) => a.slot_key === 'home_hero' && a.mode === 'emergency');
+    [heroDaily?.image_url_desktop, heroEmerg?.image_url_desktop].forEach((url) => {
+      if (url && typeof Image !== 'undefined') {
+        const img = new Image();
+        img.src = url;
+      }
+    });
+  }, []);
+
+  // Apply server mode payload to state & localStorage cache
+  const applyServerModePayload = useCallback(
+    (data: {
+      settings?: ModeSettingsTable;
+      features?: ModeFeatureRecord[];
+      assets?: ModeAssetRecord[];
+      content?: ModeContentRecord[];
+      history?: ModeHistoryRecord[];
+    }) => {
+      if (data.settings) {
+        const s = data.settings;
+        setGlobalServerMode((prev) => {
+          if (prev !== s.app_mode) {
+            const msg =
+              s.app_mode === 'emergency' ? 'Emergency mode is now on.' : 'Daily mode is now on.';
+            setAriaLiveAnnouncement(msg);
+          }
+          return s.app_mode;
+        });
+        setModeSince(s.modeSince);
+        setModeReason(s.modeReason);
+        if (s.disasterName) setDisasterName(s.disasterName);
+        if (s.expectedEnd !== undefined) setExpectedEnd(s.expectedEnd || '');
+        if (s.emergencyBroadcastMessage !== undefined) {
+          setEmergencyBroadcastMessage(s.emergencyBroadcastMessage);
+        }
+        if (s.emergencyBroadcastExpiry !== undefined) {
+          setEmergencyBroadcastExpiry(s.emergencyBroadcastExpiry);
+        }
+        setScheduledSwitch(s.scheduledSwitch || null);
+        const updatedClock =
+          s.lastUpdated || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        setLastModeUpdatedTime(updatedClock);
+
+        try {
+          localStorage.setItem('ecotriage_operating_mode', s.app_mode);
+          localStorage.setItem('ecotriage_mode_since', s.modeSince);
+          localStorage.setItem('ecotriage_mode_reason', s.modeReason);
+          localStorage.setItem('ecotriage_disaster_name', s.disasterName || '');
+          localStorage.setItem('ecotriage_mode_last_updated', updatedClock);
+        } catch {}
+      }
+      if (Array.isArray(data.features)) {
+        setModeFeatures(data.features);
+        try {
+          localStorage.setItem('ecotriage_mode_features', JSON.stringify(data.features));
+        } catch {}
+      }
+      if (Array.isArray(data.assets)) {
+        setModeAssets(data.assets);
+        try {
+          localStorage.setItem('ecotriage_mode_assets_v2', JSON.stringify(data.assets));
+        } catch {}
+      }
+      if (Array.isArray(data.content)) {
+        setModeContent(data.content);
+        try {
+          localStorage.setItem('ecotriage_mode_content', JSON.stringify(data.content));
+        } catch {}
+      }
+      if (Array.isArray(data.history)) {
+        setModeHistory(data.history);
+        try {
+          localStorage.setItem('ecotriage_mode_history', JSON.stringify(data.history));
+        } catch {}
+      }
+      setUsingCachedMode(false);
+    },
+    []
+  );
+
+  // Sync mode from server at start + SSE (/api/events) + 15-second fallback polling (Section 14.2 & 14.8)
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchModeFromServer = async () => {
+      if (networkStatus === 'Offline') {
+        setUsingCachedMode(true);
+        return;
+      }
+      try {
+        const res = await fetch('/api/mode');
+        if (!res.ok) throw new Error('Mode fetch failed');
+        const data = await res.json();
+        if (isMounted) {
+          applyServerModePayload(data);
+        }
+      } catch {
+        if (isMounted) {
+          setUsingCachedMode(true);
+        }
+      }
+    };
+
+    fetchModeFromServer();
+
+    // SSE real-time subscription (<5s update to all open tabs)
+    let es: EventSource | null = null;
+    if (typeof EventSource !== 'undefined' && networkStatus !== 'Offline') {
+      try {
+        es = new EventSource('/api/events');
+        es.onmessage = (ev) => {
+          try {
+            const parsed = JSON.parse(ev.data);
+            if (isMounted) applyServerModePayload(parsed);
+          } catch {}
+        };
+        es.onerror = () => {
+          if (isMounted) setUsingCachedMode(true);
+        };
+      } catch {}
+    }
+
+    // 15-second fallback polling
+    const pollTimer = setInterval(fetchModeFromServer, 15000);
+
+    return () => {
+      isMounted = false;
+      es?.close();
+      clearInterval(pollTimer);
+    };
+  }, [networkStatus, applyServerModePayload]);
+
+  // Automatic Low-data mode when connection is 2G or Offline in Emergency mode (Section 14.4)
+  useEffect(() => {
+    const lowDataFeatureAllowed = isModeFeatureEnabled(modeFeatures, operatingMode, 'low_data_mode');
+    if (lowDataFeatureAllowed && (networkStatus === '2G' || networkStatus === 'Offline')) {
+      setLowDataMode(true);
+    } else if (networkStatus === 'Online') {
+      setLowDataMode(false);
+    }
+  }, [networkStatus, operatingMode, modeFeatures]);
+
+  // Switch operating mode (Admin only; Section 14.2)
+  const setOperatingMode = async (
+    targetMode: OperatingMode,
+    reason: string,
+    newDisasterName?: string,
+    newExpectedEnd?: string
+  ): Promise<boolean> => {
+    setModeSwitchError(null);
+    const actorName = currentUser ? currentUser.name : 'Admin';
+    const prevMode = globalServerMode;
+
+    // Enforce Admin-only on client and server
+    if (currentRole !== 'admin') {
+      const errMsg = 'Forbidden (403): Only an Admin can change the operating mode.';
+      setModeSwitchError(errMsg);
+      showToast(errMsg);
+      return false;
+    }
+
+    if (!reason || !reason.trim()) {
+      setModeSwitchError('We could not change the mode. A reason is required.');
+      return false;
+    }
+
+    try {
+      const res = await fetch('/api/mode', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-role': currentRole,
+        },
+        body: JSON.stringify({
+          mode: targetMode,
+          reason: reason.trim(),
+          disasterName: newDisasterName,
+          expectedEnd: newExpectedEnd,
+          switchedBy: actorName,
+        }),
+      });
+
+      if (!res.ok) {
+        if (res.status === 403) {
+          setModeSwitchError('Forbidden (403): Only an Admin can change the mode.');
+          return false;
+        }
+        throw new Error('Server error');
+      }
+
+      const data = await res.json();
+      applyServerModePayload(data);
+      setPreviewMode(null);
+
+      const announcement =
+        targetMode === 'emergency' ? 'Emergency mode is now on.' : 'Daily mode is now on.';
+      setAriaLiveAnnouncement(announcement);
+      showToast(announcement);
+      appendLog(
+        actorName,
+        `Switched mode from ${prevMode.toUpperCase()} to ${targetMode.toUpperCase()}. Reason: "${reason.trim()}"`
+      );
+      return true;
+    } catch {
+      // Offline fallback if Admin switches while offline (Section 14.8 / 14.10 #9)
+      if (networkStatus === 'Offline') {
+        const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        setGlobalServerMode(targetMode);
+        setModeSince(nowStr);
+        setModeReason(reason.trim());
+        if (newDisasterName) setDisasterName(newDisasterName);
+        if (newExpectedEnd !== undefined) setExpectedEnd(newExpectedEnd);
+        setPreviewMode(null);
+        const newEntry: ModeHistoryRecord = {
+          id: `mh_${Date.now()}`,
+          from_mode: prevMode,
+          to_mode: targetMode,
+          reason: reason.trim(),
+          disasterName: newDisasterName || disasterName,
+          switched_by: `${actorName} (Offline)`,
+          switched_at: `Today, ${nowStr}`,
+          ended_at: 'Active',
+          duration: 'Active now',
+        };
+        const updatedHist = [newEntry, ...modeHistory].slice(0, 20);
+        setModeHistory(updatedHist);
+        try {
+          localStorage.setItem('ecotriage_operating_mode', targetMode);
+          localStorage.setItem('ecotriage_mode_since', nowStr);
+          localStorage.setItem('ecotriage_mode_reason', reason.trim());
+          localStorage.setItem('ecotriage_mode_history', JSON.stringify(updatedHist));
+        } catch {}
+        const announcement =
+          targetMode === 'emergency' ? 'Emergency mode is now on.' : 'Daily mode is now on.';
+        setAriaLiveAnnouncement(announcement);
+        showToast(announcement);
+        appendLog(
+          actorName,
+          `Switched mode (Offline) from ${prevMode.toUpperCase()} to ${targetMode.toUpperCase()}. Reason: "${reason.trim()}"`
+        );
+        return true;
+      }
+
+      setModeSwitchError('We could not change the mode. Try again.');
+      return false;
+    }
   };
 
-  // Emergency Contacts & Volunteers state
+  const clearModeSwitchError = () => setModeSwitchError(null);
+
+  const scheduleModeSwitch = async (
+    targetMode: OperatingMode,
+    switchAt: string,
+    reason: string,
+    schedDisasterName?: string
+  ): Promise<boolean> => {
+    if (currentRole !== 'admin') {
+      showToast('Forbidden (403): Only an Admin can schedule a mode switch.');
+      return false;
+    }
+    const actorName = currentUser ? currentUser.name : 'Admin';
+    try {
+      const res = await fetch('/api/mode/schedule', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-role': currentRole,
+        },
+        body: JSON.stringify({
+          targetMode,
+          switchAt,
+          reason,
+          disasterName: schedDisasterName,
+          createdBy: actorName,
+        }),
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      applyServerModePayload(data);
+      appendLog(
+        actorName,
+        `Scheduled automatic switch to ${targetMode.toUpperCase()} at ${switchAt}. Reason: "${reason}"`
+      );
+      showToast(`Scheduled automatic switch to ${targetMode.toUpperCase()} at ${switchAt}`);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const cancelScheduledSwitch = async (): Promise<boolean> => {
+    if (currentRole !== 'admin') return false;
+    const actorName = currentUser ? currentUser.name : 'Admin';
+    try {
+      const res = await fetch('/api/mode/schedule', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-role': currentRole,
+        },
+        body: JSON.stringify({ cancel: true }),
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      applyServerModePayload(data);
+      appendLog(actorName, 'Cancelled scheduled automatic mode switch.');
+      showToast('Scheduled mode switch cancelled.');
+      return true;
+    } catch {
+      setScheduledSwitch(null);
+      return true;
+    }
+  };
+
+  const saveModeFeatures = async (updated: ModeFeatureRecord[]): Promise<boolean> => {
+    if (currentRole !== 'admin') {
+      showToast('Forbidden (403): Only an Admin can edit feature flags.');
+      return false;
+    }
+    const actorName = currentUser ? currentUser.name : 'Admin';
+    // Diff changes for activity log
+    updated.forEach((u) => {
+      const old = modeFeatures.find((f) => f.feature_key === u.feature_key);
+      if (
+        old &&
+        (old.daily_enabled !== u.daily_enabled || old.emergency_enabled !== u.emergency_enabled)
+      ) {
+        appendLog(
+          actorName,
+          `Updated feature [${u.feature_key}]: Daily ${old.daily_enabled ? 'ON' : 'OFF'}→${
+            u.daily_enabled ? 'ON' : 'OFF'
+          }, Emergency ${old.emergency_enabled ? 'ON' : 'OFF'}→${
+            u.emergency_enabled ? 'ON' : 'OFF'
+          }`
+        );
+      }
+    });
+
+    try {
+      const res = await fetch('/api/mode/features', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-role': currentRole,
+        },
+        body: JSON.stringify({ features: updated, updatedBy: actorName }),
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      applyServerModePayload(data);
+      showToast('Mode feature flags saved and broadcast to all users.');
+      return true;
+    } catch {
+      setModeFeatures(updated);
+      try {
+        localStorage.setItem('ecotriage_mode_features', JSON.stringify(updated));
+      } catch {}
+      showToast('Mode feature flags saved locally.');
+      return true;
+    }
+  };
+
+  const saveModeAsset = async (payload: {
+    slot_key: ModeAssetSlotKey;
+    mode: OperatingMode;
+    resetToDefault?: boolean;
+    image_url_desktop?: string;
+    image_url_mobile?: string;
+    alt_en?: string;
+    alt_te?: string;
+    alt_hi?: string;
+    credit?: string;
+    licence?: string;
+    rightsConfirmed?: boolean;
+  }): Promise<{ ok: boolean; error?: string }> => {
+    if (currentRole !== 'admin') {
+      return { ok: false, error: 'Forbidden (403): Only an Admin can change mode images.' };
+    }
+    const actorName = currentUser ? currentUser.name : 'Admin';
+    try {
+      const res = await fetch('/api/mode/assets', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-role': currentRole,
+        },
+        body: JSON.stringify({ ...payload, updatedBy: actorName }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { ok: false, error: data.error || 'Could not update image slot.' };
+      }
+      applyServerModePayload(data);
+      appendLog(
+        actorName,
+        payload.resetToDefault
+          ? `Reset image slot [${payload.slot_key}] (${payload.mode}) to default.`
+          : `Updated image slot [${payload.slot_key}] (${payload.mode}) with alt text & licence.`
+      );
+      showToast(
+        payload.resetToDefault
+          ? 'Image slot reset to default.'
+          : 'Mode image updated and broadcast to all users!'
+      );
+      return { ok: true };
+    } catch {
+      return { ok: false, error: 'Network error while saving image.' };
+    }
+  };
+
+  const saveModeContent = async (
+    updates: ModeContentRecord[],
+    broadcastMsg?: string,
+    broadcastExp?: string
+  ): Promise<boolean> => {
+    if (currentRole !== 'admin') {
+      showToast('Forbidden (403): Only an Admin can edit mode content.');
+      return false;
+    }
+    const actorName = currentUser ? currentUser.name : 'Admin';
+    updates.forEach((u) => {
+      const old = modeContent.find(
+        (c) => c.key === u.key && c.mode === u.mode && c.language === u.language
+      );
+      if (old && old.text !== u.text) {
+        appendLog(
+          actorName,
+          `Edited mode content [${u.key}] (${u.mode}/${u.language}): "${old.text}" → "${u.text}"`
+        );
+      }
+    });
+
+    try {
+      const res = await fetch('/api/mode/content', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-role': currentRole,
+        },
+        body: JSON.stringify({
+          contentUpdates: updates,
+          emergencyBroadcastMessage: broadcastMsg,
+          emergencyBroadcastExpiry: broadcastExp,
+          updatedBy: actorName,
+        }),
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      applyServerModePayload(data);
+      showToast('Mode wording & content saved across all sessions.');
+      return true;
+    } catch {
+      setModeContent(updates);
+      showToast('Mode content saved locally.');
+      return true;
+    }
+  };
+
+  const isFeatureOn = useCallback(
+    (key: ModeFeatureKey): boolean => {
+      return isModeFeatureEnabled(modeFeatures, operatingMode, key);
+    },
+    [modeFeatures, operatingMode]
+  );
+
+  const getAsset = useCallback(
+    (slot: ModeAssetSlotKey): ModeAssetRecord => {
+      return getModeAssetForSlot(modeAssets, operatingMode, slot);
+    },
+    [modeAssets, operatingMode]
+  );
+
+  const getContent = useCallback(
+    (key: ModeContentKey): string => {
+      return getModeContentText(modeContent, operatingMode, key, language);
+    },
+    [modeContent, operatingMode, language]
+  );
+
+  // Emergency Contacts, Volunteers & Tasks
   const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>(() => {
     try {
       const raw = localStorage.getItem('ecotriage_emergency_contacts');
@@ -163,21 +835,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [volunteers, setVolunteers] = useState<VolunteerRegistration[]>(() => {
     try {
       const raw = localStorage.getItem('ecotriage_volunteers');
-      return raw ? JSON.parse(raw) : [
-        {
-          id: 'vol_1',
-          name: 'K. V. Rao',
-          phone: '+91 98480 11111',
-          area: 'MVP Colony',
-          skills: ['First aid', 'Tree cutting'],
-          availability: 'Weekends & Evenings',
-          status: 'Approved',
-          createdAt: '2 days ago',
-          consentToShowPhone: true,
-        },
-      ];
+      return raw
+        ? JSON.parse(raw)
+        : [
+            {
+              id: 'vol_1',
+              name: 'K. V. Rao',
+              phone: '+91 98480 11111',
+              area: 'MVP Colony',
+              skills: ['First aid', 'Tree cutting'],
+              availability: 'Weekends & Evenings',
+              status: 'Approved',
+              createdAt: '2 days ago',
+              consentToShowPhone: true,
+            },
+          ];
     } catch {
       return [];
+    }
+  });
+
+  const [volunteerTasks, setVolunteerTasks] = useState<VolunteerTaskRequest[]>(() => {
+    try {
+      const raw = localStorage.getItem('ecotriage_volunteer_tasks');
+      return raw ? JSON.parse(raw) : DEFAULT_VOLUNTEER_TASKS;
+    } catch {
+      return DEFAULT_VOLUNTEER_TASKS;
     }
   });
 
@@ -193,11 +876,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem('ecotriage_emergency_contacts', JSON.stringify(updated));
     } catch {}
     showToast(`Emergency contact "${newContact.name}" suggested (Pending Approval)`);
-    addActivityLog(currentUser ? currentUser.name : 'Citizen', `Suggested emergency contact: ${newContact.name}`);
+    appendLog(currentUser ? currentUser.name : 'Citizen', `Suggested emergency contact: ${newContact.name}`);
   };
 
   const updateContactStatus = (id: string, status: EmergencyContact['status']) => {
-    const updated = emergencyContacts.map((c) => (c.id === id ? { ...c, status, updatedAt: 'Just now' } : c));
+    const updated = emergencyContacts.map((c) =>
+      c.id === id ? { ...c, status, updatedAt: 'Just now' } : c
+    );
     setEmergencyContacts(updated);
     try {
       localStorage.setItem('ecotriage_emergency_contacts', JSON.stringify(updated));
@@ -206,6 +891,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const registerVolunteer = (volData: Omit<VolunteerRegistration, 'id' | 'createdAt' | 'status'>) => {
+    if (!isFeatureOn('volunteer_signup_tasks')) {
+      showToast('Volunteer sign-up is only active when enabled in Mode Settings.');
+      return;
+    }
     const newVol: VolunteerRegistration = {
       ...volData,
       id: 'vol_' + Date.now(),
@@ -218,7 +907,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem('ecotriage_volunteers', JSON.stringify(updated));
     } catch {}
     showToast('Volunteer registration submitted for review!');
-    addActivityLog(newVol.name, `Registered as emergency volunteer in ${newVol.area}`);
+    appendLog(newVol.name, `Registered as emergency volunteer in ${newVol.area}`);
   };
 
   const updateVolunteerStatus = (id: string, status: VolunteerRegistration['status']) => {
@@ -230,17 +919,102 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast(`Volunteer status updated to ${status}`);
   };
 
-  // Language & Accessibility
-  const [language, setLanguageState] = useState<Language>(() => {
-    return (localStorage.getItem('ecotriage_lang') as Language) || 'en';
-  });
-  const [simpleWords, setSimpleWordsState] = useState<boolean>(() => {
-    const val = localStorage.getItem('ecotriage_simple_words');
-    return val !== null ? val === 'true' : true; // Default true per prompt
-  });
-  const [textSize, setTextSizeState] = useState<TextSize>(() => {
-    return (localStorage.getItem('ecotriage_text_size') as TextSize) || 'normal';
-  });
+  const postVolunteerTask = (title: string, area: string, skillsNeeded: string) => {
+    const newTask: VolunteerTaskRequest = {
+      id: 'vtask_' + Date.now(),
+      title,
+      area,
+      skillsNeeded,
+      postedBy: currentUser ? currentUser.name : 'Command Officer',
+      postedAt: 'Just now',
+      volunteersResponded: [],
+      status: 'Open',
+    };
+    const updated = [newTask, ...volunteerTasks];
+    setVolunteerTasks(updated);
+    try {
+      localStorage.setItem('ecotriage_volunteer_tasks', JSON.stringify(updated));
+    } catch {}
+    showToast('Volunteer task posted to Emergency Contacts & Volunteers board!');
+    appendLog(newTask.postedBy, `Posted urgent volunteer task: "${title}" in ${area}`);
+  };
+
+  const respondToVolunteerTask = (taskId: string, name: string, phone: string) => {
+    const updated = volunteerTasks.map((t) => {
+      if (t.id === taskId) {
+        return {
+          ...t,
+          volunteersResponded: [
+            ...t.volunteersResponded,
+            { name, phone, confirmed: false },
+          ],
+        };
+      }
+      return t;
+    });
+    setVolunteerTasks(updated);
+    try {
+      localStorage.setItem('ecotriage_volunteer_tasks', JSON.stringify(updated));
+    } catch {}
+    showToast('Thank you! Command Officer has been notified of your offer to help.');
+    appendLog(name, `Tapped "I can help" on volunteer task ${taskId}`);
+  };
+
+  const confirmVolunteerForTask = (taskId: string, phone: string) => {
+    const updated = volunteerTasks.map((t) => {
+      if (t.id === taskId) {
+        return {
+          ...t,
+          volunteersResponded: t.volunteersResponded.map((v) =>
+            v.phone === phone ? { ...v, confirmed: true } : v
+          ),
+        };
+      }
+      return t;
+    });
+    setVolunteerTasks(updated);
+    try {
+      localStorage.setItem('ecotriage_volunteer_tasks', JSON.stringify(updated));
+    } catch {}
+    showToast('Volunteer confirmed for task!');
+    appendLog(currentUser ? currentUser.name : 'Command', `Confirmed volunteer (${phone}) for task ${taskId}`);
+  };
+
+  const submitRoadClearFeedback = (incidentId: string, isClear: boolean) => {
+    if (!isFeatureOn('citizen_road_clear_feedback')) {
+      showToast('Citizen road feedback is disabled in current mode.');
+      return;
+    }
+    const updated = incidents.map((inc) => {
+      if (inc.id === incidentId) {
+        const noteText = isClear
+          ? 'Citizen feedback: Road appears CLEAR now.'
+          : 'Citizen feedback: Road is STILL BLOCKED.';
+        return {
+          ...inc,
+          updatedAt: 'Just now',
+          history: [
+            {
+              status: inc.status,
+              by: 'Citizen Report',
+              time: 'Just now',
+              note: noteText,
+            },
+            ...inc.history,
+          ],
+        };
+      }
+      return inc;
+    });
+    setIncidents(updated);
+    saveIncidents(updated);
+    showToast(
+      isClear
+        ? 'Thank you! Marked citizen feedback: Road appears clear.'
+        : 'Thank you! Confirmed road is still blocked for crews.'
+    );
+    appendLog('Citizen Feedback', `Submitted "Is this road clear?" (${isClear ? 'Yes' : 'No'}) for ${incidentId}`);
+  };
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
@@ -261,49 +1035,86 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     document.body.classList.add(`text-size-${textSize}`);
   }, [textSize]);
 
-  // User Profile & Roles
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
-    const raw = localStorage.getItem('ecotriage_user');
-    return raw ? JSON.parse(raw) : null;
-  });
-  const [currentRole, setCurrentRole] = useState<UserRole>(() => {
-    return currentUser ? currentUser.role : 'public';
-  });
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-
   const signIn = (user: UserProfile) => {
     setCurrentUser(user);
     setCurrentRole(user.role);
     localStorage.setItem('ecotriage_user', JSON.stringify(user));
     setIsAuthModalOpen(false);
+    if (user.role !== 'admin') {
+      setPreviewMode(null);
+    }
     showToast(`Signed in as ${user.name} (${user.role})`);
-    addActivityLog(user.name, `Staff signed in with role [${user.role}]`);
+    appendLog(user.name, `Staff signed in with role [${user.role}]`);
   };
 
   const signOut = () => {
     if (currentUser) {
-      addActivityLog(currentUser.name, `User logged out.`);
+      appendLog(currentUser.name, `User logged out.`);
     }
     setCurrentUser(null);
     setCurrentRole('public');
+    setPreviewMode(null);
     localStorage.removeItem('ecotriage_user');
     showToast('Signed out. Public mode active.');
   };
 
-  // Connectivity
-  const [networkStatus, setNetworkStatus] = useState<'Online' | '2G' | 'Offline'>(() => {
-    return typeof navigator !== 'undefined' && !navigator.onLine ? 'Offline' : 'Online';
-  });
-  const [lastSyncedTime, setLastSyncedTime] = useState<string>('Just now');
+  // Sync offline reports using the scoring rules of the mode active at the time of syncing (Section 14.8)
+  const syncQueuedReports = useCallback(() => {
+    try {
+      const raw = localStorage.getItem('ecotriage_queued_reports');
+      if (!raw) return;
+      const queued: Incident[] = JSON.parse(raw);
+      if (queued.length > 0) {
+        const rescored = queued.map((inc) => {
+          const syncedScore = calculateRuleScore({
+            obstruction: inc.obstruction,
+            hazard: inc.hazard,
+            roadType: inc.roadType,
+            mode: globalServerMode,
+          });
+          return {
+            ...inc,
+            priority_score: syncedScore,
+            severity: getSeverity(syncedScore),
+            source: 'Web' as const,
+            updatedAt: 'Synced just now',
+          };
+        });
+        setIncidents((prev) => {
+          const merged = [...rescored, ...prev];
+          saveIncidents(merged);
+          return merged;
+        });
+        localStorage.removeItem('ecotriage_queued_reports');
+        showToast(
+          `Synced ${rescored.length} offline report(s) using active ${globalServerMode.toUpperCase()} mode scoring!`
+        );
+        appendLog(
+          'System Sync',
+          `Auto-synced ${rescored.length} offline reports with ${globalServerMode.toUpperCase()} mode scoring rules.`
+        );
+      }
+    } catch (err) {
+      console.warn('Failed to sync queue:', err);
+    }
+  }, [globalServerMode, showToast, appendLog]);
+
+  const setNetworkStatus = (status: 'Online' | '2G' | 'Offline') => {
+    setNetworkStatusState(status);
+    if (status === 'Online') {
+      setLastSyncedTime('Just now');
+      syncQueuedReports();
+    }
+  };
 
   useEffect(() => {
     const handleOnline = () => {
-      setNetworkStatus('Online');
+      setNetworkStatusState('Online');
       setLastSyncedTime('Just now');
       syncQueuedReports();
     };
     const handleOffline = () => {
-      setNetworkStatus('Offline');
+      setNetworkStatusState('Offline');
     };
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
@@ -311,29 +1122,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
-
-  // Data states
-  const [incidents, setIncidents] = useState<Incident[]>(() => loadIncidents());
-  const [helpPoints, setHelpPoints] = useState<HelpPoint[]>(() => loadHelpPoints());
-  const [alerts, setAlerts] = useState<AlertItem[]>(() => loadAlerts());
-  const [heroes, setHeroes] = useState<HeroProfile[]>(() => loadHeroes());
-  const [activityLogs, setActivityLogs] = useState<ActivityLogItem[]>(() => loadActivityLogs());
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [avgAiTimeMs, setAvgAiTimeMs] = useState<number>(1420);
-
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage((prev) => (prev === msg ? null : prev));
-    }, 4000);
-  };
+  }, [syncQueuedReports]);
 
   const recordAiLatency = (ms: number) => {
     setAvgAiTimeMs((prev) => Math.round((prev + ms) / 2));
   };
 
-  // Permissions gate
+  // Permissions gate (Section 14.2: ONLY Admin can switch_mode or edit mode settings)
   const hasPermission = (action: string): boolean => {
     switch (action) {
       case 'view_map':
@@ -351,8 +1146,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       case 'manage_alerts':
       case 'update_camp':
       case 'export_data':
-      case 'switch_mode':
         return currentRole === 'command' || currentRole === 'admin';
+      case 'switch_mode':
+      case 'manage_mode':
       case 'manage_users':
       case 'manage_crews':
       case 'manage_zones':
@@ -364,7 +1160,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Actions
   const notifyServerIncident = (incident: Incident, action: string) => {
     fetch('/api/notify-incident', {
       method: 'POST',
@@ -381,36 +1176,51 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }).catch((err) => console.warn('Incident notification error:', err));
   };
 
+  const triggerCriticalSoundAndVibration = () => {
+    if (!soundVibrationEnabled || !isFeatureOn('sound_vibration_alerts')) return;
+    try {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate([200, 100, 200]);
+      }
+      if (typeof window !== 'undefined' && 'AudioContext' in window) {
+        const ctx = new window.AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = 880;
+        gain.gain.value = 0.08;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.25);
+      }
+    } catch {}
+  };
+
   const addIncident = (newIncident: Incident) => {
+    if (!isFeatureOn('report_hazard')) {
+      showToast('Reporting is currently disabled in active mode settings.');
+      return;
+    }
     let finalScore = newIncident.priority_score;
     if (operatingMode === 'emergency') {
       if (newIncident.roadType === 'Hospital Route' || newIncident.roadType === 'Emergency Shelter') {
-        finalScore = Math.min(10, finalScore + 0.5);
+        finalScore = Math.min(10, Math.round((finalScore + 0.5) * 10) / 10);
       }
     }
-    const incidentWithBoost = { ...newIncident, priority_score: finalScore };
+    const finalSeverity = getSeverity(finalScore);
+    const incidentWithBoost: Incident = {
+      ...newIncident,
+      priority_score: finalScore,
+      severity: finalSeverity,
+    };
     const updated = [incidentWithBoost, ...incidents];
     setIncidents(updated);
     saveIncidents(updated);
     notifyServerIncident(incidentWithBoost, 'REPORTED');
-    addActivityLog(incidentWithBoost.reportedBy, `Reported hazard at ${incidentWithBoost.location}`);
-  };
-
-  const syncQueuedReports = () => {
-    try {
-      const raw = localStorage.getItem('ecotriage_queued_reports');
-      if (!raw) return;
-      const queued: Incident[] = JSON.parse(raw);
-      if (queued.length > 0) {
-        const merged = [...queued, ...incidents];
-        setIncidents(merged);
-        saveIncidents(merged);
-        localStorage.removeItem('ecotriage_queued_reports');
-        showToast(`Synced ${queued.length} offline report(s) successfully!`);
-        addActivityLog('System Sync', `Auto-synced ${queued.length} offline buffered reports.`);
-      }
-    } catch (err) {
-      console.warn('Failed to sync queue:', err);
+    appendLog(incidentWithBoost.reportedBy, `Reported hazard at ${incidentWithBoost.location} (Score: ${finalScore})`);
+    if (finalSeverity === 'Critical') {
+      triggerCriticalSoundAndVibration();
     }
   };
 
@@ -459,7 +1269,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIncidents(updated);
     saveIncidents(updated);
     showToast(`Priority score overridden to ${newScore.toFixed(1)}`);
-    addActivityLog(officerName, `Overrode priority for incident ${id} to ${newScore.toFixed(1)}. Reason: ${reason}`);
+    appendLog(officerName, `Overrode priority for incident ${id} to ${newScore.toFixed(1)}. Reason: ${reason}`);
   };
 
   const dispatchCrew = (incidentId: string, crewName: string) => {
@@ -486,7 +1296,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIncidents(updated);
     saveIncidents(updated);
     showToast(`Dispatched ${crewName}. Queue updated.`);
-    addActivityLog(currentUser ? currentUser.name : 'Command', `Dispatched ${crewName} to incident ${incidentId}`);
+    appendLog(currentUser ? currentUser.name : 'Command', `Dispatched ${crewName} to incident ${incidentId}`);
   };
 
   const verifyIncident = (id: string, verified: boolean, reason?: string) => {
@@ -512,7 +1322,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIncidents(updated);
     saveIncidents(updated);
     showToast(verified ? 'Report verified' : 'Report rejected');
-    addActivityLog(
+    appendLog(
       currentUser ? currentUser.name : 'Command',
       `${verified ? 'Verified' : 'Rejected'} report ${id}`
     );
@@ -550,7 +1360,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       notifyServerIncident(targetInc, 'GOVERNANCE_APPROVED_AND_PINNED');
     }
     showToast(`Hazard ${id} approved & pinned to map by ${nameToUse}`);
-    addActivityLog(nameToUse, `Approved hazard report ${id} and pinned to live map.`);
+    appendLog(nameToUse, `Approved hazard report ${id} and pinned to live map.`);
   };
 
   const updateIncidentStatus = (id: string, status: Incident['status'], note?: string) => {
@@ -580,10 +1390,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       notifyServerIncident(updatedInc, `STATUS_CHANGED_TO_${status}`);
     }
     showToast(`Status updated to ${status}`);
-    addActivityLog(currentUser ? currentUser.name : 'Officer', `Updated incident ${id} status to ${status}`);
+    appendLog(currentUser ? currentUser.name : 'Officer', `Updated incident ${id} status to ${status}`);
   };
 
   const updateHelpPointCapacity = (id: string, freeBeds: number, status?: HelpPoint['status']) => {
+    if (!isFeatureOn('live_relief_camp_capacity')) {
+      showToast('Live relief camp capacity updates are only enabled in Emergency Mode.');
+      return;
+    }
     const updated = helpPoints.map((hp) => {
       if (hp.id === id) {
         return {
@@ -598,7 +1412,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setHelpPoints(updated);
     saveHelpPoints(updated);
     showToast(`Updated capacity: ${freeBeds} free beds`);
-    addActivityLog(currentUser ? currentUser.name : 'Staff', `Updated shelter capacity at ${id}: ${freeBeds} free beds`);
+    appendLog(currentUser ? currentUser.name : 'Staff', `Updated shelter capacity at ${id}: ${freeBeds} free beds`);
   };
 
   const addHelpPoint = (hpData: Omit<HelpPoint, 'id' | 'updatedAt'>) => {
@@ -611,7 +1425,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setHelpPoints(updated);
     saveHelpPoints(updated);
     showToast(`Added facility "${newHp.name}"`);
-    addActivityLog(currentUser ? currentUser.name : 'Officer', `Added facility: ${newHp.name}`);
+    appendLog(currentUser ? currentUser.name : 'Officer', `Added facility: ${newHp.name}`);
   };
 
   const deleteHelpPoint = (id: string) => {
@@ -621,7 +1435,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     saveHelpPoints(updated);
     showToast(`Facility removed`);
     if (target) {
-      addActivityLog(currentUser ? currentUser.name : 'Admin', `Deleted facility: ${target.name}`);
+      appendLog(currentUser ? currentUser.name : 'Admin', `Deleted facility: ${target.name}`);
     }
   };
 
@@ -630,7 +1444,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIncidents(updated);
     saveIncidents(updated);
     showToast(`Incident ${id} deleted`);
-    addActivityLog(currentUser ? currentUser.name : 'Admin', `Deleted incident record ${id}`);
+    appendLog(currentUser ? currentUser.name : 'Admin', `Deleted incident record ${id}`);
   };
 
   const publishAlert = (alertData: Omit<AlertItem, 'id'>) => {
@@ -641,8 +1455,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updated = [newAlert, ...alerts];
     setAlerts(updated);
     saveAlerts(updated);
+    if (alertData.severity === 'Warning') {
+      setWarningPromptDismissed(false);
+    }
     showToast('New alert published to live ticker');
-    addActivityLog(currentUser ? currentUser.name : 'Command', `Published emergency alert: ${newAlert.message}`);
+    appendLog(currentUser ? currentUser.name : 'Command', `Published ${alertData.severity} alert: ${newAlert.message}`);
   };
 
   const expireAlert = (id: string) => {
@@ -650,8 +1467,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAlerts(updated);
     saveAlerts(updated);
     showToast('Alert deactivated');
-    addActivityLog(currentUser ? currentUser.name : 'Command', `Deactivated alert ${id}`);
+    appendLog(currentUser ? currentUser.name : 'Command', `Deactivated alert ${id}`);
   };
+
+  // Optional prompt: when a Command Officer publishes an alert of severity "Warning", every Admin sees a banner (Section 14.2)
+  const hasActiveWarningPrompt =
+    globalServerMode === 'daily' &&
+    !warningPromptDismissed &&
+    alerts.some((a) => a.active && a.severity === 'Warning');
+
+  const dismissWarningPrompt = () => setWarningPromptDismissed(true);
 
   const [likedHeroIds, setLikedHeroIds] = useState<string[]>(() => {
     try {
@@ -706,7 +1531,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setHeroes(updated);
     saveHeroes(updated);
     showToast(`Hero card "${name}" added and published!`);
-    addActivityLog(currentUser ? currentUser.name : 'Citizen', `Added hero responder: ${name}`);
+    appendLog(currentUser ? currentUser.name : 'Citizen', `Added hero responder: ${name}`);
   };
 
   const addHero = (heroData: Omit<HeroProfile, 'id' | 'thankCount'>) => {
@@ -719,7 +1544,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setHeroes(updated);
     saveHeroes(updated);
     showToast(`Added hero profile "${newHero.name}"`);
-    addActivityLog(currentUser ? currentUser.name : 'Admin', `Added hero profile: ${newHero.name}`);
+    appendLog(currentUser ? currentUser.name : 'Admin', `Added hero profile: ${newHero.name}`);
   };
 
   const updateHero = (hero: HeroProfile) => {
@@ -754,16 +1579,53 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         selectedIncidentId,
         setSelectedIncidentId,
         operatingMode,
+        globalServerMode,
+        previewMode,
+        setPreviewMode,
         modeSince,
         modeReason,
         disasterName,
+        expectedEnd,
+        emergencyBroadcastMessage,
+        emergencyBroadcastExpiry,
+        scheduledSwitch,
+        modeHistory,
+        modeFeatures,
+        modeAssets,
+        modeContent,
+        usingCachedMode,
+        lastModeUpdatedTime,
+        modeSwitchError,
+        clearModeSwitchError,
+        ariaLiveAnnouncement,
+        hasActiveWarningPrompt,
+        dismissWarningPrompt,
         setOperatingMode,
+        scheduleModeSwitch,
+        cancelScheduledSwitch,
+        saveModeFeatures,
+        saveModeAsset,
+        saveModeContent,
+        isFeatureOn,
+        getAsset,
+        getContent,
+        isModeModalOpen,
+        setIsModeModalOpen,
         emergencyContacts,
         volunteers,
+        volunteerTasks,
         addEmergencyContact,
         updateContactStatus,
         registerVolunteer,
         updateVolunteerStatus,
+        postVolunteerTask,
+        respondToVolunteerTask,
+        confirmVolunteerForTask,
+        soundVibrationEnabled,
+        setSoundVibrationEnabled,
+        lowDataMode,
+        setLowDataMode,
+        submitRoadClearFeedback,
         language,
         setLanguage,
         simpleWords,
@@ -812,6 +1674,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         showToast,
       }}
     >
+      {/* Section 14.9: Aria-live region announcing every mode switch */}
+      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {ariaLiveAnnouncement}
+      </div>
       {children}
     </AppContext.Provider>
   );

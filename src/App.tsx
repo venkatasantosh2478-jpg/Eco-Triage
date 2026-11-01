@@ -30,11 +30,32 @@ import { MyAssignmentsView } from './pages/role_views/MyAssignmentsView.tsx';
 import { VerifyReportsView } from './pages/role_views/VerifyReportsView.tsx';
 import { ContentManagerView } from './pages/role_views/ContentManagerView.tsx';
 import { AdminActivityLogView } from './pages/role_views/AdminActivityLogView.tsx';
+import { ModeSettingsView } from './pages/role_views/ModeSettingsView.tsx';
 
-import { ShieldAlert, ArrowLeft } from 'lucide-react';
+import { ShieldAlert } from 'lucide-react';
 
 const AppContent: React.FC = () => {
-  const { activePage, setActivePage, hasPermission, currentRole, setIsAuthModalOpen } = useApp();
+  const {
+    activePage,
+    hasPermission,
+    operatingMode,
+    disasterName,
+    getContent,
+    getAsset,
+  } = useApp();
+
+  // Section 14.5: Update social share metadata dynamically based on active mode
+  React.useEffect(() => {
+    const tagline =
+      operatingMode === 'emergency'
+        ? `${getContent('share_tagline')} ${disasterName}`
+        : getContent('share_tagline');
+    const shareAsset = getAsset('share_card');
+    document.querySelector('meta[property="og:title"]')?.setAttribute('content', tagline);
+    document
+      .querySelector('meta[property="og:image"]')
+      ?.setAttribute('content', shareAsset.image_url_desktop);
+  }, [operatingMode, disasterName, getContent, getAsset]);
 
   // Role Gate check
   const renderPage = () => {
@@ -82,6 +103,12 @@ const AppContent: React.FC = () => {
           return <PermissionDeniedNotice requiredRole="Command Officer" />;
         }
         return <VerifyReportsView />;
+
+      case 'mode-settings':
+        if (!hasPermission('switch_mode')) {
+          return <PermissionDeniedNotice requiredRole="Admin" />;
+        }
+        return <ModeSettingsView />;
 
       case 'content-manager':
         if (!hasPermission('edit_content')) {

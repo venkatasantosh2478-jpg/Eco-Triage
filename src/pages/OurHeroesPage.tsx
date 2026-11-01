@@ -28,6 +28,8 @@ export const OurHeroesPage: React.FC = () => {
     currentRole,
     language,
     simpleWords,
+    isFeatureOn,
+    getContent,
   } = useApp();
 
   const [activeDept, setActiveDept] = useState<string>('All');
@@ -144,8 +146,28 @@ export const OurHeroesPage: React.FC = () => {
     }
   };
 
+  const showThankYouBanner = isFeatureOn('our_heroes_thank_you_banner');
+  const heroesBannerText = getContent('heroes_banner_text');
+
   return (
     <div className="space-y-8">
+      {/* Section 14.4: Special "Thank you to everyone working right now" banner in Emergency mode */}
+      {showThankYouBanner && heroesBannerText && (
+        <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-[#D32F2F] via-red-700 to-[#101A3A] text-white shadow-lg flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-white/15 flex items-center justify-center shrink-0">
+              <Heart className="w-5 h-5 text-yellow-300 fill-yellow-300 animate-pulse" />
+            </div>
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-yellow-300 block">
+                Live Storm Response Tribute
+              </span>
+              <strong className="text-sm sm:text-base font-black">{heroesBannerText}</strong>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Title & Stats Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
         <div className="relative z-10 max-w-xl space-y-2">

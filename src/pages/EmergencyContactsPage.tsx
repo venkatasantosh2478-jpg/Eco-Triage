@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext.tsx';
 import { EmergencyContact } from '../utils/modeConfig.ts';
 import { t } from '../utils/translations.ts';
@@ -13,28 +13,42 @@ import {
   CheckCircle2,
   Lock,
   MessageSquare,
+  HandHelping,
+  Pin,
 } from 'lucide-react';
 
 export const EmergencyContactsPage: React.FC = () => {
   const {
     emergencyContacts,
     volunteers,
+    volunteerTasks,
     addEmergencyContact,
     updateContactStatus,
     registerVolunteer,
-    updateVolunteerStatus,
+    postVolunteerTask,
+    claimVolunteerTask,
+    confirmVolunteerTask,
     currentRole,
     operatingMode,
     language,
     simpleWords,
+    isFeatureOn,
   } = useApp();
 
-  const [activeCategory, setActiveCategory] = useState<string>(
-    operatingMode === 'emergency' ? 'control_room' : 'all'
-  );
+  const [activeCategory, setActiveCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSuggestModalOpen, setIsSuggestModalOpen] = useState(false);
   const [isVolunteerModalOpen, setIsVolunteerModalOpen] = useState(false);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [claimTaskId, setClaimTaskId] = useState<string | null>(null);
+  const [claimVolunteerName, setClaimVolunteerName] = useState('');
+
+  // Section 14.4: volunteer_signup_tasks feature flag
+  const showVolunteerSignupAndTasks = isFeatureOn('volunteer_signup_tasks');
+
+  useEffect(() => {
+    setActiveCategory('all');
+  }, [operatingMode]);
 
   // Suggest Contact Form State
   const [cName, setCName] = useState('');
@@ -53,6 +67,11 @@ export const EmergencyContactsPage: React.FC = () => {
   const [vAvail, setVAvail] = useState('Weekends & Evenings');
   const [vConsent, setVConsent] = useState(true);
 
+  // Command Task Form State
+  const [tTitle, setTTitle] = useState('');
+  const [tArea, setTArea] = useState('MVP Colony');
+  const [tSkill, setTSkill] = useState('Tree cutting');
+
   const categories = [
     { id: 'all', label: 'All Contacts' },
     { id: 'national_emergency', label: 'National Emergency' },
@@ -69,15 +88,29 @@ export const EmergencyContactsPage: React.FC = () => {
     (c) => c.status === 'Approved' || currentRole === 'admin' || currentRole === 'command'
   );
 
-  const filteredContacts = approvedContacts.filter((c) => {
-    const matchesCat = activeCategory === 'all' || c.category === activeCategory;
-    const matchesSearch =
-      !searchQuery.trim() ||
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.area.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCat && matchesSearch;
-  });
+  // Section 14.6: Daily mode pins National numbers at top; Emergency mode pins Disaster Control Rooms & National numbers at top
+  const filteredContacts = approvedContacts
+    .filter((c) => {
+      const matchesCat = activeCategory === 'all' || c.category === activeCategory;
+      const matchesSearch =
+        !searchQuery.trim() ||
+        c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.area.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesCat && matchesSearch;
+    })
+    .sort((a, b) => {
+      const scoreCategory = (cat: EmergencyContact['category']) => {
+        if (operatingMode === 'emergency') {
+          if (cat === 'control_room') return 0;
+          if (cat === 'national_emergency') return 1;
+          return 2;
+        }
+        if (cat === 'national_emergency') return 0;
+        return 1;
+      };
+      return scoreCategory(a.category) - scoreCategory(b.category);
+    });
 
   const handleSuggestContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,11 +157,21 @@ export const EmergencyContactsPage: React.FC = () => {
     setVArea('');
   };
 
+  const handlePostTaskSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tTitle.trim()) return;
+    postVolunteerTask(tTitle.trim(), tArea.trim() || 'Visakhapatnam', tSkill);
+    setIsTaskModalOpen(false);
+    setTTitle('');
+  };
+
   const toggleSkill = (skill: string) => {
     setVSkills((prev) =>
       prev.includes(skill) ? prev.filter((s) => s !== skill) : [...prev, skill]
     );
   };
+
+  const approvedVolunteers = volunteers.filter((v) => v.status === 'Approved');
 
   return (
     <div className="space-y-8">
@@ -143,18 +186,22 @@ export const EmergencyContactsPage: React.FC = () => {
               {t('contactsTitle', language, simpleWords)}
             </h1>
             <p className="text-xs sm:text-sm text-slate-300">
-              {t('contactsSub', language, simpleWords)}
+              {operatingMode === 'emergency'
+                ? 'Disaster Control Rooms and National Emergency numbers are pinned at the top.'
+                : t('contactsSub', language, simpleWords)}
             </p>
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsVolunteerModalOpen(true)}
-              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-lg active:scale-95 transition-all"
-            >
-              <Heart className="w-4 h-4 fill-white" />
-              <span>{t('joinVolunteerBtn', language, simpleWords)}</span>
-            </button>
+            {showVolunteerSignupAndTasks && (
+              <button
+                onClick={() => setIsVolunteerModalOpen(true)}
+                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-lg active:scale-95 transition-all"
+              >
+                <Heart className="w-4 h-4 fill-white" />
+                <span>{t('joinVolunteerBtn', language, simpleWords)}</span>
+              </button>
+            )}
 
             <button
               onClick={() => setIsSuggestModalOpen(true)}
@@ -222,6 +269,127 @@ export const EmergencyContactsPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Section 14.4 & 14.6: "Volunteers needed now" task request board (when volunteer_signup_tasks is ON) */}
+      {showVolunteerSignupAndTasks && (
+        <div className="bg-red-50/70 rounded-3xl p-6 border-2 border-red-200 space-y-4 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-[#D32F2F] text-white flex items-center justify-center shrink-0">
+                <HandHelping className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#D32F2F] block">
+                  Emergency Civic Mobilisation
+                </span>
+                <h2 className="text-lg font-black text-[#101A3A]">Volunteers Needed Now</h2>
+                <p className="text-xs text-slate-600">
+                  Command Officers post urgent neighbourhood tasks. Tap &ldquo;I can help&rdquo; to volunteer, or sign up for deployment.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {(currentRole === 'command' || currentRole === 'admin') && (
+                <button
+                  onClick={() => setIsTaskModalOpen(true)}
+                  className="px-3.5 py-2 bg-[#101A3A] hover:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Post Volunteer Task</span>
+                </button>
+              )}
+              <button
+                onClick={() => setIsVolunteerModalOpen(true)}
+                className="px-4 py-2 bg-[#D32F2F] hover:bg-red-700 text-white font-bold rounded-xl text-xs shadow"
+              >
+                Join as Volunteer
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {volunteerTasks.map((task) => (
+              <div
+                key={task.id}
+                className="bg-white rounded-2xl p-4 border border-red-200 flex flex-col justify-between gap-3 shadow-xs"
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-red-100 text-red-800">
+                      {task.skillRequired}
+                    </span>
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        task.status === 'Confirmed'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : task.status === 'Claimed'
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'bg-blue-100 text-blue-800'
+                      }`}
+                    >
+                      {task.status}
+                    </span>
+                  </div>
+                  <h3 className="font-extrabold text-sm text-[#101A3A]">{task.title}</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Area: <strong className="text-slate-700">{task.area}</strong> • Posted {task.createdAt}
+                  </p>
+                  {task.claimedBy && (
+                    <p className="text-xs text-emerald-700 font-bold mt-1">
+                      Volunteer: {task.claimedBy}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                  {task.status === 'Open' && (
+                    claimTaskId === task.id ? (
+                      <div className="flex items-center gap-1.5 w-full">
+                        <input
+                          type="text"
+                          value={claimVolunteerName}
+                          onChange={(e) => setClaimVolunteerName(e.target.value)}
+                          placeholder="Your name & phone..."
+                          className="flex-1 px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg"
+                        />
+                        <button
+                          onClick={() => {
+                            if (claimVolunteerName.trim()) {
+                              claimVolunteerTask(task.id, claimVolunteerName.trim());
+                              setClaimTaskId(null);
+                              setClaimVolunteerName('');
+                            }
+                          }}
+                          className="px-3 py-1.5 bg-emerald-600 text-white font-bold rounded-lg text-xs"
+                        >
+                          Send
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setClaimTaskId(task.id)}
+                        className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-xs"
+                      >
+                        I can help
+                      </button>
+                    )
+                  )}
+
+                  {task.status === 'Claimed' && (currentRole === 'command' || currentRole === 'admin') && (
+                    <button
+                      onClick={() => confirmVolunteerTask(task.id)}
+                      className="px-3.5 py-1.5 bg-[#2457C5] hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow-xs"
+                    >
+                      Command: Confirm Volunteer
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Search & Category Chips */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
         <div className="relative flex-1 max-w-md">
@@ -261,35 +429,23 @@ export const EmergencyContactsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Emergency Mode Banner for Volunteers */}
-      {operatingMode === 'emergency' && (
-        <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-900 flex items-center justify-between gap-3 shadow-xs">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="w-6 h-6 text-red-600 shrink-0" />
-            <div>
-              <strong className="block text-sm font-extrabold">Volunteers & Responders Needed Now</strong>
-              <span className="text-xs text-red-700">
-                Active disaster emergency in Visakhapatnam. Register your skills for local debris clearance and shelter aid.
-              </span>
-            </div>
-          </div>
-          <button
-            onClick={() => setIsVolunteerModalOpen(true)}
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs shadow shrink-0"
-          >
-            Join Now
-          </button>
-        </div>
-      )}
-
       {/* Contacts Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filteredContacts.map((c) => {
+          const isPinned =
+            operatingMode === 'emergency'
+              ? c.category === 'control_room' || c.category === 'national_emergency'
+              : c.category === 'national_emergency';
+
           return (
             <div
               key={c.id}
               className={`bg-white rounded-3xl p-5 border shadow-sm hover:shadow-md transition-all flex flex-col justify-between ${
-                c.status === 'Pending' ? 'border-amber-300 bg-amber-50/20' : 'border-slate-200'
+                c.status === 'Pending'
+                  ? 'border-amber-300 bg-amber-50/20'
+                  : isPinned
+                  ? 'border-blue-300 ring-1 ring-blue-100'
+                  : 'border-slate-200'
               }`}
             >
               <div className="space-y-3">
@@ -298,10 +454,16 @@ export const EmergencyContactsPage: React.FC = () => {
                     <span className="p-2 rounded-xl bg-blue-50 text-[#2457C5]">
                       <Building className="w-4 h-4" />
                     </span>
-                    <div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-600 inline-block">
                         {c.category.replace('_', ' ')}
                       </span>
+                      {isPinned && (
+                        <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-blue-50 text-[#2457C5] inline-flex items-center gap-1">
+                          <Pin className="w-2.5 h-2.5" />
+                          <span>Pinned</span>
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -380,6 +542,120 @@ export const EmergencyContactsPage: React.FC = () => {
           );
         })}
       </div>
+
+      {/* Approved Community Volunteers List (Always visible in both modes per Section 14.4) */}
+      {approvedVolunteers.length > 0 && (
+        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-extrabold text-[#101A3A]">
+                Approved Community Volunteers ({approvedVolunteers.length})
+              </h2>
+              <p className="text-xs text-slate-500">
+                Verified local citizens trained in first aid, chainsaw clearance, and relief logistics.
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {approvedVolunteers.map((v) => (
+              <div
+                key={v.id}
+                className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3"
+              >
+                <div>
+                  <strong className="text-xs font-extrabold text-[#101A3A] block">{v.name}</strong>
+                  <span className="text-[11px] text-slate-500 block">{v.area}</span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {v.skills.map((s) => (
+                      <span
+                        key={s}
+                        className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-[#2457C5]"
+                      >
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                {(v.consentToShowPhone || currentRole === 'admin' || currentRole === 'command') && (
+                  <a
+                    href={`tel:${v.phone}`}
+                    className="px-3 py-1.5 bg-white border border-slate-200 hover:border-[#2457C5] rounded-xl text-xs font-bold text-[#2457C5] flex items-center gap-1 shrink-0"
+                  >
+                    <Phone className="w-3 h-3" />
+                    <span>Call</span>
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Command Post Volunteer Task Modal */}
+      {isTaskModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl animate-in zoom-in-95 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="font-extrabold text-base text-[#101A3A]">Post Volunteer Task Request</h3>
+              <button onClick={() => setIsTaskModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handlePostTaskSubmit} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Task Description</label>
+                <input
+                  type="text"
+                  value={tTitle}
+                  onChange={(e) => setTTitle(e.target.value)}
+                  placeholder="e.g. Need 3 chainsaw volunteers at MVP Colony Sector 4"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Area / Ward</label>
+                <input
+                  type="text"
+                  value={tArea}
+                  onChange={(e) => setTArea(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Skill Needed</label>
+                <select
+                  value={tSkill}
+                  onChange={(e) => setTSkill(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold"
+                >
+                  <option value="Tree cutting">Tree cutting</option>
+                  <option value="First aid">First aid</option>
+                  <option value="Food distribution">Food distribution</option>
+                  <option value="Driving">Driving</option>
+                  <option value="Translation">Translation</option>
+                </select>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsTaskModalOpen(false)}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 text-xs font-bold bg-[#D32F2F] text-white rounded-xl shadow"
+                >
+                  Publish Task
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Suggest Contact Modal */}
       {isSuggestModalOpen && (

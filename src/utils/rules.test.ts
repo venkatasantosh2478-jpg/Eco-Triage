@@ -7,6 +7,18 @@ import {
   getModeBannerVisibility,
   toggleHeroSaluteState,
 } from './rules.ts';
+import {
+  DEFAULT_MODE_FEATURES,
+  DEFAULT_MODE_ASSETS,
+  DEFAULT_MODE_CONTENT,
+  canUserSwitchMode,
+  resolveEffectiveMode,
+  isModeFeatureEnabled,
+  getModeAssetForSlot,
+  getModeAssetAlt,
+  getModeContentText,
+  getStatusLabelForMode,
+} from './modeConfig.ts';
 import { t } from './translations.ts';
 
 test('calculates score correctly for critical live wire + complete block on hospital route', () => {
@@ -20,6 +32,40 @@ test('calculates score correctly for critical live wire + complete block on hosp
   assert.equal(getSeverity(score), 'Critical');
 });
 
+test('adds +0.5 in Emergency mode on Hospital Route and Emergency Shelter, capped at 10.0 (Section 14.4)', () => {
+  const dailyHospitalScore = calculateRuleScore(
+    {
+      obstruction: 'single_lane',
+      hazard: 'none',
+      roadType: 'Hospital Route',
+    },
+    'daily'
+  );
+  // 3.0 + 1.5 (single_lane) + 0 + 1.5 (hospital) = 6.0
+  assert.equal(dailyHospitalScore, 6.0);
+
+  const emergencyHospitalScore = calculateRuleScore(
+    {
+      obstruction: 'single_lane',
+      hazard: 'none',
+      roadType: 'Hospital Route',
+    },
+    'emergency'
+  );
+  // 6.0 + 0.5 emergency boost = 6.5
+  assert.equal(emergencyHospitalScore, 6.5);
+
+  const emergencyShelterCapped = calculateRuleScore(
+    {
+      obstruction: 'complete_block',
+      hazard: 'live_electrical_wire',
+      roadType: 'Emergency Shelter',
+    },
+    'emergency'
+  );
+  assert.equal(emergencyShelterCapped, 10.0);
+});
+
 test('calculates score correctly for low severity residential single lane', () => {
   const score = calculateRuleScore({
     obstruction: 'single_lane',
@@ -31,34 +77,75 @@ test('calculates score correctly for low severity residential single lane', () =
   assert.equal(getSeverity(score), 'Medium');
 });
 
-test('caps score at 10.0', () => {
-  const score = calculateRuleScore({
-    obstruction: 'complete_block',
-    hazard: 'live_electrical_wire',
-    roadType: 'Emergency Shelter',
-  });
-  assert.ok(score <= 10.0);
-});
-
 test('calculates distance correctly between two Visakhapatnam points', () => {
   // Maddilapalem (17.7385, 83.3150) and RK Beach (17.7120, 83.3230)
   const dist = calculateDistance(17.7385, 83.3150, 17.7120, 83.3230);
   assert.ok(dist > 2 && dist < 5); // approx 3.1 km
 });
 
-test('daily mode bar is visible only to officers while emergency banner notifies public and officers', () => {
+test('Section 14.2: only Admin can switch or manage mode, while officers see mode bar in daily mode', () => {
   const publicDaily = getModeBannerVisibility('public', 'daily');
   assert.equal(publicDaily.showOfficerModeBar, false);
   assert.equal(publicDaily.showEmergencyAlertBanner, false);
+  assert.equal(publicDaily.canManageMode, false);
 
   const publicEmergency = getModeBannerVisibility('public', 'emergency');
   assert.equal(publicEmergency.showOfficerModeBar, false);
   assert.equal(publicEmergency.showEmergencyAlertBanner, true);
+  assert.equal(publicEmergency.canManageMode, false);
 
   const officerDaily = getModeBannerVisibility('field', 'daily');
   assert.equal(officerDaily.showOfficerModeBar, true);
   assert.equal(officerDaily.showEmergencyAlertBanner, false);
-  assert.equal(officerDaily.canManageMode, true);
+  assert.equal(officerDaily.canManageMode, false);
+
+  const commandDaily = getModeBannerVisibility('command', 'daily');
+  assert.equal(commandDaily.canManageMode, false);
+
+  const adminDaily = getModeBannerVisibility('admin', 'daily');
+  assert.equal(adminDaily.showOfficerModeBar, true);
+  assert.equal(adminDaily.canManageMode, true);
+
+  assert.equal(canUserSwitchMode('admin'), true);
+  assert.equal(canUserSwitchMode('command'), false);
+  assert.equal(canUserSwitchMode('field'), false);
+  assert.equal(canUserSwitchMode('viewer'), false);
+  assert.equal(canUserSwitchMode('public'), false);
+});
+
+test('Section 14.7 & 14.4: resolves Preview-As mode for Admin only and evaluates feature flags per mode', () => {
+  assert.equal(resolveEffectiveMode('daily', 'emergency', 'admin'), 'emergency');
+  assert.equal(resolveEffectiveMode('daily', 'emergency', 'command'), 'daily');
+  assert.equal(resolveEffectiveMode('daily', null, 'admin'), 'daily');
+
+  // Red emergency strip is OFF in Daily and ON in Emergency
+  assert.equal(isModeFeatureEnabled(DEFAULT_MODE_FEATURES, 'daily', 'red_emergency_strip'), false);
+  assert.equal(isModeFeatureEnabled(DEFAULT_MODE_FEATURES, 'emergency', 'red_emergency_strip'), true);
+
+  // Weather widget is ON in Daily and OFF in Emergency
+  assert.equal(isModeFeatureEnabled(DEFAULT_MODE_FEATURES, 'daily', 'weather_widget'), true);
+  assert.equal(isModeFeatureEnabled(DEFAULT_MODE_FEATURES, 'emergency', 'weather_widget'), false);
+});
+
+test('Section 14.5 & 14.6: resolves mode image slots, trilingual alt text, trilingual content, and status labels', () => {
+  const dailyHero = getModeAssetForSlot(DEFAULT_MODE_ASSETS, 'daily', 'home_hero');
+  const emergencyHero = getModeAssetForSlot(DEFAULT_MODE_ASSETS, 'emergency', 'home_hero');
+  assert.ok(dailyHero && emergencyHero);
+  assert.notEqual(dailyHero.image_url_desktop, emergencyHero.image_url_desktop);
+  assert.ok(getModeAssetAlt(dailyHero, 'te').length > 0);
+  assert.ok(getModeAssetAlt(emergencyHero, 'hi').length > 0);
+
+  const dailyHeadlineEn = getModeContentText(DEFAULT_MODE_CONTENT, 'daily', 'hero_headline', 'en');
+  const emergencyHeadlineEn = getModeContentText(DEFAULT_MODE_CONTENT, 'emergency', 'hero_headline', 'en');
+  assert.equal(dailyHeadlineEn, 'Safer roads, every day.');
+  assert.equal(emergencyHeadlineEn, 'Help reaches blocked roads faster.');
+
+  // Status labels differ by mode
+  assert.equal(getStatusLabelForMode('Pending', 'daily', 'en'), 'Open');
+  assert.equal(getStatusLabelForMode('Pending', 'emergency', 'en'), 'Pending');
+  assert.equal(getStatusLabelForMode('Assigned', 'daily', 'en'), 'Scheduled');
+  assert.equal(getStatusLabelForMode('Assigned', 'emergency', 'en'), 'On the way');
+  assert.equal(getStatusLabelForMode('In Progress', 'emergency', 'en'), 'Working');
 });
 
 test('allows liking multiple heroes independently on their cards', () => {
@@ -97,4 +184,3 @@ test('translates UI strings across English, Telugu, and Hindi', () => {
   assert.equal(t('cardReliefTitle', 'te'), 'సమీప పునరావాస శిబిరాలు');
   assert.equal(t('cardReliefTitle', 'hi'), 'नज़दीकी राहत शिविर');
 });
-

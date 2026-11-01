@@ -605,6 +605,208 @@ export const translations: TranslationDictionary = {
     te: 'సులభ పదాల మోడ్',
     hi: 'सरल भाषा मोड',
   },
+
+  // HomePage & Section 14 UI Strings
+  aiSorted: {
+    en: 'Priority sorted by AI',
+    te: 'AI ద్వారా ప్రాధాన్యత వర్గీకరణ',
+    hi: 'AI द्वारा प्राथमिकता तय',
+  },
+  quickAccessSub: {
+    en: 'One-tap links to emergency contacts, live map, and relief shelters',
+    te: 'అత్యవసర నంబర్లు, లైవ్ మ్యాప్ మరియు పునరావాస కేంద్రాలకు తక్షణ లింకులు',
+    hi: 'आपातकालीन नंबर, लाइव मैप और राहत शिविरों के लिए एक-टैप लिंक',
+  },
+  emergencyContacts112: {
+    en: 'Emergency Contacts (112, 108)',
+    te: 'అత్యవసర నంబర్లు (112, 108)',
+    hi: 'आपातकालीन संपर्क (112, 108)',
+  },
+  emergencyContactsSub: {
+    en: 'National emergency, control rooms & medical lines',
+    te: 'జాతీయ అత్యవసర నంబర్లు, కంట్రోల్ రూమ్ & వైద్య సహాయం',
+    hi: 'राष्ट्रीय आपातकाल, कंट्रोल रूम और मेडिकल हेल्पलाइन',
+  },
+  liveOperationalMap: {
+    en: 'Live Operational Map',
+    te: 'లైవ్ ఆపరేషనల్ మ్యాప్',
+    hi: 'लाइव ऑपरेशनल मैप',
+  },
+  activeHazardsPinned: {
+    en: 'active road hazards pinned',
+    te: 'యాక్టివ్ రోడ్డు ప్రమాదాలు',
+    hi: 'सक्रिय सड़क खतरे दर्ज',
+  },
+  reliefCampsFreeBeds: {
+    en: 'Relief Camps & Shelters',
+    te: 'పునరావాస శిబిరాలు & ఆశ్రయాలు',
+    hi: 'राहत शिविर और आश्रय',
+  },
+  verifiedSheltersFood: {
+    en: 'Verified shelters, food & drinking water',
+    te: 'ధృవీకరించబడిన షెల్టర్లు, ఆహారం & తాగునీరు',
+    hi: 'सत्यापित आश्रय, भोजन और पेयजल',
+  },
+  staffSignInRoles: {
+    en: 'Staff Sign In / Roles',
+    te: 'సిబ్బంది లాగిన్ / పాత్రలు',
+    hi: 'अधिकारी लॉगिन / भूमिकाएं',
+  },
+  fieldCommandAdminAccess: {
+    en: 'Field, Command & Admin access',
+    te: 'ఫీల్డ్, కమాండ్ & అడ్మిన్ యాక్సెస్',
+    hi: 'फ़ील्ड, कमांड और एडमिन एक्सेस',
+  },
+  totalReportsMetric: {
+    en: 'Total Reports',
+    te: 'మొత్తం నివేదికలు',
+    hi: 'कुल रिपोर्ट्स',
+  },
+  acrossZones: {
+    en: 'Across all 6 GVMC coastal zones',
+    te: 'అన్ని 6 GVMC తీరప్రాంత జోన్‌లలో',
+    hi: 'सभी 6 GVMC तटीय ज़ोन में',
+  },
+  criticalHazardsMetric: {
+    en: 'Critical Hazards',
+    te: 'తీవ్రమైన ప్రమాదాలు',
+    hi: 'गंभीर खतरे',
+  },
+  liveWiresHospitalBlocks: {
+    en: 'Live wires & hospital route blocks',
+    te: 'కరెంట్ తీగలు & ఆసుపత్రి రోడ్డు బ్లాక్‌లు',
+    hi: 'बिजली के तार और अस्पताल मार्ग अवरोध',
+  },
+  responseCrewsMetric: {
+    en: 'Response Crews',
+    te: 'స్పందన బృందాలు',
+    hi: 'राहत दस्ते',
+  },
+  activeTeams: {
+    en: 'Active PWD, Electricity & Rescue teams',
+    te: 'యాక్టివ్ PWD, విద్యుత్ & రెస్క్యూ బృందాలు',
+    hi: 'सक्रिय PWD, बिजली और बचाव दल',
+  },
+  hazardsClearedMetric: {
+    en: 'Hazards Cleared',
+    te: 'తొలగించిన అడ్డంకులు',
+    hi: 'हटाए गए खतरे',
+  },
+  restoredEmergencyRoutes: {
+    en: 'Restored emergency & civic routes',
+    te: 'పునరుద్ధరించబడిన అత్యవసర రహదారులు',
+    hi: 'बहाल किए गए आपातकालीन मार्ग',
+  },
+  nearbyReliefCampsCard: {
+    en: 'Nearby Relief Camps',
+    te: 'సమీప పునరావాస శిబిరాలు',
+    hi: 'नज़दीकी राहत शिविर',
+  },
+  nearbyReliefCampsDesc: {
+    en: 'Find safe shelters, drinking water, and bed availability near you.',
+    te: 'మీ దగ్గరలోని సురక్షిత షెల్టర్లు, తాగునీరు & పడకల వివరాలు.',
+    hi: 'अपने पास सुरक्षित आश्रय, पेयजल और खाली बेड की जानकारी पाएं।',
+  },
+  checkCapacity: {
+    en: 'Check Shelters',
+    te: 'షెల్టర్లు చూడండి',
+    hi: 'आश्रय देखें',
+  },
+  medicalHelpCard: {
+    en: 'Medical Help',
+    te: 'వైద్య సహాయం',
+    hi: 'चिकित्सा सहायता',
+  },
+  medicalHelpDesc: {
+    en: 'Emergency hospital trauma bays, clinics, and 108 ambulance lines.',
+    te: 'అత్యవసర ఆసుపత్రులు, క్లినిక్‌లు & 108 అంబులెన్స్ సేవలు.',
+    hi: 'आपातकालीन अस्पताल ट्रॉमा सेंटर, क्लिनिक और 108 एम्बुलेंस सेवाएं।',
+  },
+  getAssistance: {
+    en: 'Get Assistance',
+    te: 'సహాయం పొందండి',
+    hi: 'सहायता प्राप्त करें',
+  },
+  safetyPrecautionsCard: {
+    en: 'Safety Precautions',
+    te: 'భద్రతా జాగ్రత్తలు',
+    hi: 'सुरक्षा सावधानियां',
+  },
+  safetyPrecautionsDesc: {
+    en: 'Before, during, and after cyclone checklists and preparedness kits.',
+    te: 'తుఫానుకు ముందు, సమయంలో మరియు తర్వాత తీసుకోవాల్సిన జాగ్రత్తలు.',
+    hi: 'चक्रवात से पहले, दौरान और बाद के सुरक्षा दिशानिर्देश व किट।',
+  },
+  stayPrepared: {
+    en: 'Stay Prepared',
+    te: 'సిద్ధంగా ఉండండి',
+    hi: 'तैयार रहें',
+  },
+  ourHeroesCard: {
+    en: 'Our Heroes',
+    te: 'మన హీరోలు',
+    hi: 'हमारे नायक',
+  },
+  ourHeroesDesc: {
+    en: 'Salute the frontline municipal, electrical, and rescue workers.',
+    te: 'మున్సిపల్, విద్యుత్ మరియు రెస్క్యూ సిబ్బందికి సెల్యూట్ చేయండి.',
+    hi: 'फ्रंटलाइन नगर निगम, बिजली और बचाव कर्मियों को सलाम करें।',
+  },
+  priorityOpenIncidents: {
+    en: 'Priority Open Road Reports',
+    te: 'ముఖ్యమైన పెండింగ్ రోడ్డు నివేదికలు',
+    hi: 'प्राथमिकता वाली खुली सड़क रिपोर्ट्स',
+  },
+  priorityOpenSub: {
+    en: 'Ranked in real time by the EcoTriage AI & rule priority model',
+    te: 'ఎకోట్రయాజ్ AI ప్రాధాన్యత మోడల్ ద్వారా ర్యాంక్ చేయబడినవి',
+    hi: 'इकोट्रायाज AI प्राथमिकता मॉडल द्वारा रियल-टाइम में क्रमबद्ध',
+  },
+  emergencyNumbersTitle: {
+    en: '24/7 Toll-Free Disaster Lifelines',
+    te: '24/7 అత్యవసర విపత్తు హెల్ప్‌లైన్లు',
+    hi: '24/7 टोल-फ्री आपदा हेल्पलाइन',
+  },
+  vizagControlRoom: {
+    en: 'Visakhapatnam Disaster Control Room',
+    te: 'విశాఖపట్నం విపత్తు కంట్రోల్ రూమ్',
+    hi: 'विशाखापत्तनम आपदा कंट्रोल रूम',
+  },
+  police: {
+    en: 'Police',
+    te: 'పోలీసు',
+    hi: 'पुलिस',
+  },
+  ambulance: {
+    en: 'Ambulance',
+    te: 'అంబులెన్స్',
+    hi: 'एम्बुलेंस',
+  },
+  fireRescue: {
+    en: 'Fire & Rescue',
+    te: 'ఫైర్ & రెస్క్యూ',
+    hi: 'फायर व बचाव',
+  },
+  ndrfHelp: {
+    en: 'National Emergency',
+    te: 'జాతీయ అత్యవసరం',
+    hi: 'राष्ट्रीय आपातकाल',
+  },
+  civicWorkflowBadge: {
+    en: 'Operational Workflow',
+    te: 'కార్యనిర్వహణ విధానం',
+    hi: 'कार्यप्रणाली',
+  },
+  howWorksTitle: {
+    en: 'How EcoTriage Works',
+    te: 'ఎకోట్రయాజ్ ఎలా పనిచేస్తుంది',
+    hi: 'इकोट्रायाज कैसे काम करता है',
+  },
+  howWorksSub: {
+    en: 'Combining citizen hazard reporting, AI priority triage, and rapid municipal crew dispatch.',
+    te: 'ప్రజల రిపోర్టింగ్, AI ప్రాధాన్యత విశ్లేషణ మరియు వేగవంతమైన మున్సిపల్ సిబ్బంది కేటాయింపు.',
+    hi: 'नागरिक रिपोर्टिंग, AI प्राथमिकता जांच और त्वरित नगर निगम दल तैनाती।',
+  },
 };
 
 export function t(key: string, lang: Language = 'en', simpleWords: boolean = true): string {

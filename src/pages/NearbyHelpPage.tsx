@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext.tsx';
 import { HelpCategory, HelpPoint } from '../types.ts';
 import { calculateDistance } from '../utils/rules.ts';
@@ -6,29 +6,43 @@ import { LeafletMap } from '../components/LeafletMap.tsx';
 import {
   AlertTriangle,
   Building2,
-  CheckCircle2,
   Compass,
   Edit2,
   Heart,
   LifeBuoy,
-  MapPin,
   Navigation,
   Phone,
   Shield,
   Truck,
   Utensils,
-  Droplet,
-  Zap,
-  Users,
   X,
 } from 'lucide-react';
 
 export const NearbyHelpPage: React.FC = () => {
-  const { helpPoints, updateHelpPointCapacity, addHelpPoint, deleteHelpPoint, currentRole, incidents } = useApp();
+  const {
+    helpPoints,
+    updateHelpPointCapacity,
+    addHelpPoint,
+    deleteHelpPoint,
+    currentRole,
+    incidents,
+    operatingMode,
+    isFeatureOn,
+  } = useApp();
 
-  const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [activeCategory, setActiveCategory] = useState<string>(
+    operatingMode === 'emergency' ? 'relief_camp' : 'all'
+  );
   const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
   const [routeWarning, setRouteWarning] = useState<string | null>(null);
+
+  // Section 14.6: Nearby Help default chip is "All" in Daily mode, "Relief Camps" in Emergency mode
+  useEffect(() => {
+    setActiveCategory(operatingMode === 'emergency' ? 'relief_camp' : 'all');
+  }, [operatingMode]);
+
+  const showLiveCampCapacity = isFeatureOn('live_relief_camp_capacity');
+  const showRouteSafetyWarning = isFeatureOn('route_safety_warning');
 
   // Edit Shelter Capacity Modal (Command & Admin)
   const [editingPoint, setEditingPoint] = useState<HelpPoint | null>(null);
@@ -86,19 +100,23 @@ export const NearbyHelpPage: React.FC = () => {
     .filter((hp) => (activeCategory === 'all' ? true : hp.category === activeCategory))
     .sort((a, b) => a.dist - b.dist);
 
-  // Directions clicked - check if road is blocked by critical hazards
+  // Directions clicked - check if road is blocked by critical hazards (when route_safety_warning is ON)
   const handleGetDirections = (hp: HelpPoint) => {
     setSelectedPointId(hp.id);
-    // Find if there is a critical hazard near this route
+    if (!showRouteSafetyWarning) {
+      setRouteWarning(null);
+      return;
+    }
     const blockedNearby = incidents.find(
       (inc) =>
+        inc.status !== 'Cleared' &&
         (inc.severity === 'Critical' || inc.severity === 'High') &&
         calculateDistance(hp.lat, hp.lng, inc.lat, inc.lng) < 2.5
     );
 
     if (blockedNearby) {
       setRouteWarning(
-        `Warning: Route near ${blockedNearby.location} is blocked by ${
+        `Route Safety Warning: Road near ${blockedNearby.location} is blocked by ${
           blockedNearby.hazard === 'live_electrical_wire' ? 'live electrical cables' : 'fallen trees'
         }. Use alternate highway bypass.`
       );
@@ -132,7 +150,9 @@ export const NearbyHelpPage: React.FC = () => {
             Nearby Help & Safe Shelters
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Verified relief camps, trauma emergency hospitals, and water distribution points in Visakhapatnam.
+            {operatingMode === 'emergency'
+              ? 'Active cyclone relief camps with live bed availability, trauma hospitals, and emergency water points.'
+              : 'Static directory of verified relief shelters, hospitals, and municipal services in Visakhapatnam.'}
           </p>
         </div>
 
@@ -176,7 +196,7 @@ export const NearbyHelpPage: React.FC = () => {
       </div>
 
       {/* Route Warning Banner if detected */}
-      {routeWarning && (
+      {showRouteSafetyWarning && routeWarning && (
         <div className="p-4 rounded-2xl bg-amber-50 border-2 border-amber-400 text-amber-950 flex items-start gap-3 shadow-md animate-in fade-in">
           <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
@@ -199,6 +219,14 @@ export const NearbyHelpPage: React.FC = () => {
           {pointsWithDistance.map((hp) => {
             const isCamp = hp.category === 'relief_camp';
             const isSelected = selectedPointId === hp.id;
+            const nearbyCritical = showRouteSafetyWarning
+              ? incidents.find(
+                  (inc) =>
+                    inc.status !== 'Cleared' &&
+                    (inc.severity === 'Critical' || inc.severity === 'High') &&
+                    calculateDistance(hp.lat, hp.lng, inc.lat, inc.lng) < 2.5
+                )
+              : undefined;
 
             return (
               <div
@@ -259,16 +287,15 @@ export const NearbyHelpPage: React.FC = () => {
 
                 <p className="text-xs text-slate-500 mb-3">{hp.address}</p>
 
-                {/* Capacity Bar for Relief Camps */}
-                {isCamp && hp.capacity && hp.capacityFree !== undefined && (
+                {/* Capacity Bar for Relief Camps (Section 14.4: live_relief_camp_capacity flag) */}
+                {showLiveCampCapacity && isCamp && hp.capacity && hp.capacityFree !== undefined && (
                   <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 mb-3 space-y-1.5">
                     <div className="flex items-center justify-between text-xs font-bold text-slate-700">
-                      <span>Shelter Capacity</span>
+                      <span>Live Shelter Capacity</span>
                       <span className="text-[#16834A]">
                         {hp.capacityFree} of {hp.capacity} beds free
                       </span>
                     </div>
-                    {/* Visual Progress Bar */}
                     <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
                       <div
                         className="bg-[#16834A] h-2.5 rounded-full transition-all"
@@ -277,6 +304,16 @@ export const NearbyHelpPage: React.FC = () => {
                         }}
                       />
                     </div>
+                  </div>
+                )}
+
+                {/* Route safety warning inline badge when enabled */}
+                {showRouteSafetyWarning && nearbyCritical && (
+                  <div className="mb-3 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] font-semibold flex items-center gap-2">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span>
+                      Route hazard near {nearbyCritical.location} ({nearbyCritical.severity}). Check bypass before travelling.
+                    </span>
                   </div>
                 )}
 
@@ -320,13 +357,13 @@ export const NearbyHelpPage: React.FC = () => {
                   {/* Command Officer / Admin quick capacity update & delete */}
                   {(currentRole === 'command' || currentRole === 'admin') && (
                     <div className="flex items-center gap-2">
-                      {isCamp && (
+                      {showLiveCampCapacity && isCamp && (
                         <button
                           onClick={() => handleOpenEdit(hp)}
                           className="text-xs font-bold text-[#16834A] hover:underline flex items-center gap-1"
                         >
                           <Edit2 className="w-3 h-3" />
-                          <span>Update Beds</span>
+                          <span>Update capacity</span>
                         </button>
                       )}
                       {currentRole === 'admin' && (

@@ -17,13 +17,25 @@ import {
 } from 'lucide-react';
 
 export const LiveMapPage: React.FC = () => {
-  const { incidents, helpPoints, setSelectedIncidentId, setActivePage, approveAndPinIncident, currentRole } = useApp();
+  const {
+    incidents,
+    helpPoints,
+    setSelectedIncidentId,
+    setActivePage,
+    approveAndPinIncident,
+    currentRole,
+    operatingMode,
+  } = useApp();
 
-  // Filters
+  // Section 14.6: Daily default filter "All open". Emergency default filter "Critical and Pending".
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<
-    'All' | 'Pinned' | 'Critical' | 'Pending' | 'Hospital Routes' | 'Relief Camps'
-  >('Pinned');
+    'All open' | 'Critical and Pending' | 'Pinned' | 'Critical' | 'Pending' | 'Hospital Routes'
+  >(operatingMode === 'emergency' ? 'Critical and Pending' : 'All open');
+
+  React.useEffect(() => {
+    setActiveFilter(operatingMode === 'emergency' ? 'Critical and Pending' : 'All open');
+  }, [operatingMode]);
 
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
 
@@ -34,6 +46,10 @@ export const LiveMapPage: React.FC = () => {
       inc.id.toLowerCase().includes(searchQuery.toLowerCase());
     if (!matchesSearch) return false;
 
+    if (activeFilter === 'All open') return inc.status !== 'Cleared';
+    if (activeFilter === 'Critical and Pending') {
+      return inc.severity === 'Critical' || inc.status === 'Pending';
+    }
     if (activeFilter === 'Pinned') return inc.pinnedToMap || inc.approvedByGovernance;
     if (activeFilter === 'Critical') return inc.severity === 'Critical';
     if (activeFilter === 'Pending') return inc.status === 'Pending';
@@ -51,25 +67,35 @@ export const LiveMapPage: React.FC = () => {
   const selectedIncident = incidents.find((i) => i.id === selectedPinId);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid={`live-map-page-${operatingMode}`}>
       {/* Top Banner */}
-      <div className="bg-gradient-to-r from-[#101A3A] via-[#2457C5] to-[#1E40AF] text-white p-4 sm:p-5 rounded-2xl shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div
+        className={`${
+          operatingMode === 'emergency'
+            ? 'bg-gradient-to-r from-red-950 via-[#D32F2F] to-red-800'
+            : 'bg-gradient-to-r from-[#101A3A] via-[#2457C5] to-[#1E40AF]'
+        } text-white p-4 sm:p-5 rounded-2xl shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3`}
+      >
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
             <span className="font-extrabold text-sm uppercase tracking-wider text-cyan-200">
-              Live GIS Command Map • Visakhapatnam
+              Live GIS Command Map • Visakhapatnam ({operatingMode.toUpperCase()} MODE)
             </span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">Real-Time Coastal Hazard Tracking</h1>
+          <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">
+            {operatingMode === 'emergency'
+              ? 'Emergency Blocked Corridors & Critical Pins'
+              : 'Real-Time Coastal Hazard Tracking'}
+          </h1>
           <p className="text-xs text-blue-100 mt-0.5">
-            Powered by OpenStreetMap & Governance Officer Verification Stream
+            Default Filter: {activeFilter} • OpenStreetMap & Governance Stream
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setActivePage('report')}
-            className="bg-[#D32F2F] hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg transition-all flex items-center gap-1.5 whitespace-nowrap"
+            className="bg-[#D32F2F] hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
           >
             <AlertTriangle className="w-4 h-4" />
             <span>Report Hazard</span>
@@ -93,12 +119,21 @@ export const LiveMapPage: React.FC = () => {
           </div>
 
           {/* Filter Chips */}
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-            {(['Pinned', 'All', 'Critical', 'Pending', 'Hospital Routes'] as const).map((f) => (
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5" data-testid="map-filter-chips">
+            {(
+              [
+                'All open',
+                'Critical and Pending',
+                'Pinned',
+                'Critical',
+                'Pending',
+                'Hospital Routes',
+              ] as const
+            ).map((f) => (
               <button
                 key={f}
                 onClick={() => setActiveFilter(f)}
-                className={`px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
+                className={`px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                   activeFilter === f
                     ? 'bg-[#2457C5] text-white shadow-2xs'
                     : 'bg-slate-100 hover:bg-slate-200 text-slate-600'

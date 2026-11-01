@@ -1,12 +1,15 @@
 import { HazardFlag, ObstructionType, RoadType, SeverityLevel } from '../types.ts';
+import { MODE_CONFIG, OperatingMode } from './modeConfig.ts';
 
 export interface ScoreInput {
   obstruction: ObstructionType;
   hazard: HazardFlag;
   roadType: RoadType;
+  mode?: OperatingMode;
 }
 
-export function calculateRuleScore(input: ScoreInput): number {
+export function calculateRuleScore(input: ScoreInput, modeOverride?: OperatingMode): number {
+  const effectiveMode = modeOverride || input.mode || 'daily';
   let score = 3.0;
 
   // Obstruction score
@@ -24,6 +27,9 @@ export function calculateRuleScore(input: ScoreInput): number {
   // Road type priority boost
   if (input.roadType === 'Hospital Route' || input.roadType === 'Emergency Shelter') {
     score += 1.5;
+    if (effectiveMode === 'emergency') {
+      score += MODE_CONFIG.emergency.priorityBoost;
+    }
   } else if (input.roadType === 'Major Artery' || input.roadType === 'Industrial Lifeline') {
     score += 1.2;
   } else if (input.roadType === 'Transit Route') {
@@ -136,7 +142,7 @@ export function getModeBannerVisibility(
   return {
     showOfficerModeBar: isOfficer,
     showEmergencyAlertBanner: isEmergency,
-    canManageMode: currentRole === 'admin' || currentRole === 'command' || currentRole === 'field',
+    canManageMode: currentRole === 'admin',
   };
 }
 

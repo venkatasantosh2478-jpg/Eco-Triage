@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext.tsx';
+import { ModeImage } from '../components/ModeImage.tsx';
 import {
   AlertTriangle,
-  ArrowRight,
   CheckCircle2,
+  Compass,
   Droplet,
   Home,
   Package,
@@ -15,8 +16,18 @@ import {
 } from 'lucide-react';
 
 export const PrecautionsPage: React.FC = () => {
-  const { setActivePage, language } = useApp();
-  const [activeTab, setActiveTab] = useState<'before' | 'during' | 'after'>('before');
+  const { setActivePage, operatingMode, isFeatureOn } = useApp();
+  const [activeTab, setActiveTab] = useState<'before' | 'during' | 'after'>(
+    operatingMode === 'emergency' ? 'during' : 'before'
+  );
+
+  // Section 14.6: Precautions default tab is "Before Cyclone" in Daily mode, "During Cyclone" in Emergency mode
+  useEffect(() => {
+    setActiveTab(operatingMode === 'emergency' ? 'during' : 'before');
+  }, [operatingMode]);
+
+  const showPreparednessKit = isFeatureOn('precautions_preparedness_kit');
+  const showEvacuationGuide = isFeatureOn('evacuation_safe_route_guide');
 
   const beforePrecautions = [
     {
@@ -81,15 +92,11 @@ export const PrecautionsPage: React.FC = () => {
       desc: 'Moving waters conceal open manholes and washed-out road bridges. Wait for clearance team verification.',
     },
     {
-      icon: HeartIcon,
+      icon: Shield,
       title: 'Check on Vulnerable Neighbors',
       desc: 'Assist elderly citizens, pregnant mothers, and infants stranded by uprooted compound wall debris.',
     },
   ];
-
-  function HeartIcon(props: any) {
-    return <Shield {...props} />;
-  }
 
   const currentCards =
     activeTab === 'before'
@@ -100,17 +107,24 @@ export const PrecautionsPage: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      {/* Title */}
-      <div>
-        <span className="text-xs font-bold text-amber-600 uppercase tracking-wider">
-          Life-Saving Guidelines
-        </span>
-        <h1 className="text-2xl sm:text-3xl font-black text-[#101A3A] tracking-tight mt-1">
-          Cyclone Safety Precautions
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-          Step-by-step verified action checklist for Visakhapatnam coastal households.
-        </p>
+      {/* Title + Section 14.5 ModeImage banner */}
+      <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
+        <div className="h-44 sm:h-56 relative">
+          <ModeImage slot="precautions_thumb" className="w-full h-full" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-slate-900/30 to-transparent flex items-end p-6">
+            <div className="text-white">
+              <span className="text-xs font-bold text-amber-300 uppercase tracking-wider">
+                Life-Saving Guidelines
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight mt-0.5">
+                Cyclone Safety Precautions
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-200 mt-0.5">
+                Step-by-step verified action checklist for Visakhapatnam coastal households.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Tabs: Before / During / After */}
@@ -147,7 +161,7 @@ export const PrecautionsPage: React.FC = () => {
         </button>
       </div>
 
-      {/* PROMINENT RED LIVE WIRE WARNING ON EVERY TAB (Section 5 Page 7) */}
+      {/* PROMINENT RED LIVE WIRE WARNING ON EVERY TAB */}
       <div className="p-5 sm:p-6 rounded-3xl bg-[#FFF1F0] border-2 border-[#D32F2F] text-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
         <div className="flex items-start gap-4">
           <div className="w-12 h-12 rounded-2xl bg-[#D32F2F] text-white flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -171,6 +185,33 @@ export const PrecautionsPage: React.FC = () => {
         </button>
       </div>
 
+      {/* Section 14.4: Evacuation and Safe-Route Guide (Emergency mode feature) */}
+      {showEvacuationGuide && (
+        <div className="bg-amber-50 rounded-3xl p-6 border-2 border-amber-300 space-y-3 shadow-xs">
+          <div className="flex items-center gap-2.5 text-amber-900">
+            <Compass className="w-5 h-5 text-amber-700" />
+            <h2 className="text-base font-black">Evacuation & Safe-Route Guide (Active Cyclone)</h2>
+          </div>
+          <p className="text-xs text-amber-900 leading-relaxed">
+            Low-lying coastal wards (RK Beach, Lawson&apos;s Bay, Fishing Harbour, Bheemili) must use designated inland corridors via Maddilapalem and NH-16 elevated overpasses. Avoid Beach Road during storm surge warnings.
+          </p>
+          <div className="flex flex-wrap gap-2 pt-1">
+            <button
+              onClick={() => setActivePage('help')}
+              className="px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white font-bold rounded-xl text-xs shadow"
+            >
+              Find Nearest Relief Camp
+            </button>
+            <button
+              onClick={() => setActivePage('map')}
+              className="px-4 py-2 bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold rounded-xl text-xs"
+            >
+              Check Blocked Roads on Map
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Precaution Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {currentCards.map((card, i) => {
@@ -191,6 +232,33 @@ export const PrecautionsPage: React.FC = () => {
           );
         })}
       </div>
+
+      {/* Section 14.4: Household Preparedness Kit List (precautions_preparedness_kit flag) */}
+      {showPreparednessKit && (
+        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
+          <div className="flex items-center gap-2.5">
+            <Package className="w-5 h-5 text-[#2457C5]" />
+            <h2 className="text-base font-extrabold text-[#101A3A]">
+              Household 72-Hour Preparedness Kit Checklist
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-slate-700 font-semibold">
+            {[
+              '15 Litres sealed drinking water + chlorine tablets',
+              'Dry non-perishable rations, biscuits, and ORS packets',
+              'Charged 20,000mAh power bank & LED torch with spare cells',
+              'Waterproof pouch with Aadhaar, property deeds & medical prescriptions',
+              'First-aid box: antiseptic, bandages, paracetamol, inhalers',
+              'Emergency whistle, rope, and battery transistor radio',
+            ].map((item, idx) => (
+              <div key={idx} className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                <CheckCircle2 className="w-4 h-4 text-[#16834A] shrink-0" />
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Disclaimer note */}
       <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center text-xs text-slate-500">

@@ -1,35 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext.tsx';
 import { SAMPLE_CREWS } from '../utils/storage.ts';
 import {
   Activity,
-  AlertTriangle,
   BarChart3,
-  Calendar,
-  CheckCircle2,
-  Clock,
   Download,
-  HardHat,
-  Layers,
-  LifeBuoy,
   PieChart,
-  Shield,
+  Radio,
   Truck,
-  Users,
-  Zap,
 } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
-  const { incidents, helpPoints, activityLogs, currentRole, setActivePage, setSelectedIncidentId } = useApp();
+  const {
+    incidents,
+    helpPoints,
+    activityLogs,
+    currentRole,
+    setSelectedIncidentId,
+    operatingMode,
+    isFeatureOn,
+  } = useApp();
 
   const [dateRange, setDateRange] = useState('7d');
+  const [liveRefreshTick, setLiveRefreshTick] = useState(0);
+
+  const show7DayTrend = isFeatureOn('dashboard_7day_trend');
+  const showCrewTrackingBoard = isFeatureOn('crew_tracking_board');
+
+  // Section 14.4: Emergency mode Live Dashboard panel refreshes every 10 seconds
+  useEffect(() => {
+    if (operatingMode !== 'emergency') return;
+    const interval = setInterval(() => {
+      setLiveRefreshTick((t) => t + 1);
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [operatingMode]);
 
   // Stats calculation
   const total = incidents.length;
-  const critical = incidents.filter((i) => i.severity === 'Critical').length;
+  const critical = incidents.filter((i) => i.severity === 'Critical' && i.status !== 'Cleared').length;
   const pending = incidents.filter((i) => i.status === 'Pending').length;
   const cleared = incidents.filter((i) => i.status === 'Cleared').length;
   const freeCrews = SAMPLE_CREWS.filter((c) => c.status === 'Free').length;
+  const busyCrews = SAMPLE_CREWS.length - freeCrews;
+
+  // Relief camp capacity totals
+  const camps = helpPoints.filter((hp) => hp.category === 'relief_camp');
+  const totalCampBeds = camps.reduce((acc, c) => acc + (c.capacity || 0), 0);
+  const freeCampBeds = camps.reduce((acc, c) => acc + (c.capacityFree || 0), 0);
 
   // Severity counts
   const high = incidents.filter((i) => i.severity === 'High').length;
@@ -91,7 +109,9 @@ export const DashboardPage: React.FC = () => {
             Command Operations Dashboard
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Aggregated municipal clearance metrics, crew dispatch statuses, and shelter occupancies.
+            {operatingMode === 'emergency'
+              ? 'Live Emergency Operations: 10-second telemetry refresh for critical blockages, crew dispatch, and shelter capacity.'
+              : 'Daily Operations: 7-day hazard clearance trend and average clearance time.'}
           </p>
         </div>
 
@@ -117,6 +137,57 @@ export const DashboardPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Section 14.4: Emergency Mode Live Dashboard Panel (10s auto-refresh) */}
+      {operatingMode === 'emergency' && (
+        <div className="bg-gradient-to-r from-[#101A3A] via-slate-900 to-red-950 text-white rounded-3xl p-6 shadow-xl border border-red-500/30 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Radio className="w-4 h-4 text-red-400 animate-pulse" />
+              <span className="text-xs font-extrabold uppercase tracking-wider text-red-300">
+                Live Disaster Telemetry • Auto-refreshes every 10s
+              </span>
+            </div>
+            <span className="text-[11px] text-slate-400 font-mono">
+              Sync #{liveRefreshTick + 1}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-4 rounded-2xl bg-white/10 border border-white/15">
+              <span className="text-[11px] font-bold text-red-300 uppercase block">Open Critical Count</span>
+              <strong className="text-3xl font-black text-white mt-1 block">{critical}</strong>
+              <span className="text-[10px] text-slate-300">Priority 9.0+ lifelines</span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white/10 border border-white/15">
+              <span className="text-[11px] font-bold text-cyan-300 uppercase block">Crews Free / Busy</span>
+              <strong className="text-3xl font-black text-white mt-1 block">
+                {freeCrews} Free / {busyCrews} Busy
+              </strong>
+              <span className="text-[10px] text-slate-300">{SAMPLE_CREWS.length} total squads</span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white/10 border border-white/15">
+              <span className="text-[11px] font-bold text-amber-300 uppercase block">
+                Avg Report → Assignment
+              </span>
+              <strong className="text-3xl font-black text-white mt-1 block">11 min</strong>
+              <span className="text-[10px] text-slate-300">Emergency dispatch SLA &lt; 15m</span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white/10 border border-white/15">
+              <span className="text-[11px] font-bold text-emerald-300 uppercase block">
+                Relief Camp Capacity Totals
+              </span>
+              <strong className="text-3xl font-black text-white mt-1 block">
+                {freeCampBeds} / {totalCampBeds}
+              </strong>
+              <span className="text-[10px] text-slate-300">Beds free across {camps.length} camps</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 5 KPI Stat Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
@@ -161,63 +232,69 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Visual Charts: 7-Day Trend Bar Chart & Severity Breakdown */}
+      {/* Visual Charts: 7-Day Trend Bar Chart (when dashboard_7day_trend is ON) & Severity Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* 7-Day Trend (7 Cols) */}
-        <div className="lg:col-span-7 bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div>
-              <h2 className="font-extrabold text-base text-[#101A3A]">Hazard Trend (Last 7 Days)</h2>
-              <span className="text-xs text-slate-400">Daily reports vs cleared bottlenecks</span>
-            </div>
-            <BarChart3 className="w-5 h-5 text-slate-400" />
-          </div>
-
-          {/* SVG Bar Chart */}
-          <div className="h-56 flex items-end justify-between gap-3 pt-6 pb-2 px-2">
-            {[
-              { day: 'Mon', reports: 42, cleared: 38 },
-              { day: 'Tue', reports: 68, cleared: 52 },
-              { day: 'Wed', reports: 95, cleared: 78 },
-              { day: 'Thu', reports: 140, cleared: 110 },
-              { day: 'Fri', reports: 115, cleared: 125 },
-              { day: 'Sat', reports: 80, cleared: 95 },
-              { day: 'Sun', reports: 55, cleared: 60 },
-            ].map((d, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
-                <div className="w-full flex items-end justify-center gap-1.5 h-44">
-                  {/* Reports bar */}
-                  <div
-                    style={{ height: `${(d.reports / 150) * 100}%` }}
-                    className="w-1/2 bg-[#D32F2F]/80 rounded-t-md hover:bg-red-700 transition-all"
-                    title={`Reports: ${d.reports}`}
-                  />
-                  {/* Cleared bar */}
-                  <div
-                    style={{ height: `${(d.cleared / 150) * 100}%` }}
-                    className="w-1/2 bg-[#16834A]/80 rounded-t-md hover:bg-green-700 transition-all"
-                    title={`Cleared: ${d.cleared}`}
-                  />
-                </div>
-                <span className="text-[11px] font-bold text-slate-500">{d.day}</span>
+        {show7DayTrend && (
+          <div className="lg:col-span-7 bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h2 className="font-extrabold text-base text-[#101A3A]">
+                  7-Day Trend & Average Clearance Time
+                </h2>
+                <span className="text-xs text-slate-400">
+                  Daily reports vs cleared bottlenecks • Avg clearance: 2h 15m
+                </span>
               </div>
-            ))}
-          </div>
-
-          <div className="flex items-center justify-center gap-6 text-xs font-semibold text-slate-600 pt-2 border-t border-slate-100">
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-sm bg-[#D32F2F]" />
-              <span>Incoming Ingested Reports</span>
+              <BarChart3 className="w-5 h-5 text-slate-400" />
             </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-sm bg-[#16834A]" />
-              <span>Hazards Cleared</span>
+
+            <div className="h-56 flex items-end justify-between gap-3 pt-6 pb-2 px-2">
+              {[
+                { day: 'Mon', reports: 42, cleared: 38 },
+                { day: 'Tue', reports: 68, cleared: 52 },
+                { day: 'Wed', reports: 95, cleared: 78 },
+                { day: 'Thu', reports: 140, cleared: 110 },
+                { day: 'Fri', reports: 115, cleared: 125 },
+                { day: 'Sat', reports: 80, cleared: 95 },
+                { day: 'Sun', reports: 55, cleared: 60 },
+              ].map((d, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
+                  <div className="w-full flex items-end justify-center gap-1.5 h-44">
+                    <div
+                      style={{ height: `${(d.reports / 150) * 100}%` }}
+                      className="w-1/2 bg-[#D32F2F]/80 rounded-t-md hover:bg-red-700 transition-all"
+                      title={`Reports: ${d.reports}`}
+                    />
+                    <div
+                      style={{ height: `${(d.cleared / 150) * 100}%` }}
+                      className="w-1/2 bg-[#16834A]/80 rounded-t-md hover:bg-green-700 transition-all"
+                      title={`Cleared: ${d.cleared}`}
+                    />
+                  </div>
+                  <span className="text-[11px] font-bold text-slate-500">{d.day}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-center gap-6 text-xs font-semibold text-slate-600 pt-2 border-t border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-sm bg-[#D32F2F]" />
+                <span>Incoming Ingested Reports</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-sm bg-[#16834A]" />
+                <span>Hazards Cleared</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Severity & Status Breakdown (5 Cols) */}
-        <div className="lg:col-span-5 bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
+        {/* Severity & Status Breakdown */}
+        <div
+          className={`${
+            show7DayTrend ? 'lg:col-span-5' : 'lg:col-span-12'
+          } bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4`}
+        >
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <h2 className="font-extrabold text-base text-[#101A3A]">Severity Breakdown</h2>
             <PieChart className="w-5 h-5 text-slate-400" />
@@ -278,64 +355,90 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           <div className="pt-4 border-t border-slate-100 text-xs text-slate-500">
-            Average time from intake to crew assignment: <strong className="text-slate-800">18 minutes</strong>.
+            Average time from intake to crew assignment:{' '}
+            <strong className="text-slate-800">
+              {operatingMode === 'emergency' ? '11 minutes' : '18 minutes'}
+            </strong>
+            .
           </div>
         </div>
       </div>
 
-      {/* Crews Panel & Relief Camp Summary */}
+      {/* Crews Tracking Board (Section 14.4: crew_tracking_board feature flag) & Activity Log */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Squad Status Panel (7 Cols) */}
-        <div className="lg:col-span-7 bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <h2 className="font-extrabold text-base text-[#101A3A]">Municipal Clearance Squads</h2>
-            <span className="text-xs text-slate-400 font-bold">{SAMPLE_CREWS.length} Units Deployed</span>
-          </div>
-
-          <div className="space-y-2">
-            {SAMPLE_CREWS.map((crew) => (
-              <div
-                key={crew.id}
-                className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-blue-100 text-[#2457C5] flex items-center justify-center">
-                    <Truck className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <strong className="block text-slate-800 font-bold">{crew.name}</strong>
-                    <span className="text-[11px] text-slate-500">{crew.type}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      crew.status === 'Free'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-amber-100 text-amber-700'
-                    }`}
-                  >
-                    {crew.status}
-                  </span>
-                  {crew.assignedIncidentId && (
-                    <button
-                      onClick={() => {
-                        setSelectedIncidentId(crew.assignedIncidentId!);
-                      }}
-                      className="text-[11px] font-bold text-[#2457C5] hover:underline"
-                    >
-                      View Job
-                    </button>
-                  )}
-                </div>
+        {showCrewTrackingBoard && (
+          <div className="lg:col-span-7 bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h2 className="font-extrabold text-base text-[#101A3A]">
+                  Live Crew Tracking Board (Free / Busy / On the way / Working)
+                </h2>
+                <span className="text-xs text-slate-400">
+                  Real-time field unit dispatch statuses across Visakhapatnam zones
+                </span>
               </div>
-            ))}
-          </div>
-        </div>
+              <span className="text-xs text-slate-400 font-bold">{SAMPLE_CREWS.length} Units Deployed</span>
+            </div>
 
-        {/* Activity Log Panel for Admin & Command (5 Cols) */}
-        <div className="lg:col-span-5 bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
+            <div className="space-y-2">
+              {SAMPLE_CREWS.map((crew, idx) => {
+                const detailedStatus =
+                  crew.status === 'Free'
+                    ? 'Free'
+                    : idx % 2 === 0
+                    ? 'On the way'
+                    : 'Working';
+                return (
+                  <div
+                    key={crew.id}
+                    className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-blue-100 text-[#2457C5] flex items-center justify-center">
+                        <Truck className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <strong className="block text-slate-800 font-bold">{crew.name}</strong>
+                        <span className="text-[11px] text-slate-500">{crew.type}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
+                          detailedStatus === 'Free'
+                            ? 'bg-green-100 text-green-700'
+                            : detailedStatus === 'On the way'
+                            ? 'bg-blue-100 text-blue-700'
+                            : 'bg-amber-100 text-amber-800'
+                        }`}
+                      >
+                        {detailedStatus}
+                      </span>
+                      {crew.assignedIncidentId && (
+                        <button
+                          onClick={() => {
+                            setSelectedIncidentId(crew.assignedIncidentId!);
+                          }}
+                          className="text-[11px] font-bold text-[#2457C5] hover:underline"
+                        >
+                          View Job
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Activity Log Panel for Admin & Command */}
+        <div
+          className={`${
+            showCrewTrackingBoard ? 'lg:col-span-5' : 'lg:col-span-12'
+          } bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4`}
+        >
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <h2 className="font-extrabold text-base text-[#101A3A]">Recent Municipal Activity</h2>
             <Activity className="w-4 h-4 text-slate-400" />

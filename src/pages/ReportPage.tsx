@@ -33,10 +33,24 @@ export const ReportPage: React.FC = () => {
     currentUser,
     showToast,
     recordAiLatency,
+    operatingMode,
+    isFeatureOn,
   } = useApp();
+
+  const isEmergency = operatingMode === 'emergency';
 
   // Active Tab: 'photo' | 'sms'
   const [reportTab, setReportTab] = useState<'photo' | 'sms'>('photo');
+
+  // Section 14.6: Daily opens full form; Emergency opens camera step directly and collapses optional fields so a report takes 2 taps
+  const [showOptionalFields, setShowOptionalFields] = useState<boolean>(!isEmergency);
+  const [everydayHazardTag, setEverydayHazardTag] = useState<string>('Fallen branch');
+
+  useEffect(() => {
+    setShowOptionalFields(operatingMode !== 'emergency');
+    setObstruction(operatingMode === 'emergency' ? 'complete_block' : 'single_lane');
+    setHasLiveWire(operatingMode === 'emergency');
+  }, [operatingMode]);
 
   // Form Fields
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
@@ -49,13 +63,17 @@ export const ReportPage: React.FC = () => {
   const [isGpsLoading, setIsGpsLoading] = useState<boolean>(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
 
-  const [obstruction, setObstruction] = useState<ObstructionType>('complete_block');
-  const [hasLiveWire, setHasLiveWire] = useState<boolean>(true);
+  const [obstruction, setObstruction] = useState<ObstructionType>(
+    isEmergency ? 'complete_block' : 'single_lane'
+  );
+  const [hasLiveWire, setHasLiveWire] = useState<boolean>(isEmergency);
   const [hasTree, setHasTree] = useState<boolean>(true);
   const [hasPole, setHasPole] = useState<boolean>(false);
   const [hasWater, setHasWater] = useState<boolean>(false);
 
-  const [roadType, setRoadType] = useState<RoadType>('Hospital Route');
+  const [roadType, setRoadType] = useState<RoadType>(
+    isEmergency ? 'Hospital Route' : 'Standard Road'
+  );
   const [zone, setZone] = useState<string>(VISAKHAPATNAM_ZONES[2]);
   const [note, setNote] = useState<string>('Large tree down near hospital gate with sparking wires.');
   const [isListening, setIsListening] = useState<boolean>(false);
@@ -581,13 +599,38 @@ export const ReportPage: React.FC = () => {
 
       {/* Main Report Form (Hidden when result is showing) */}
       {!submittedIncident && (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6" data-testid={`report-form-${operatingMode}`}>
+          {/* Emergency Mode 2-Tap Fast Report Header Banner (Section 14.4 & 14.6) */}
+          {isFeatureOn('urgent_one_tap_report') && (
+            <div
+              data-testid="urgent-two-tap-banner"
+              className="p-4 rounded-2xl bg-red-50 border-2 border-[#D32F2F] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+            >
+              <div>
+                <span className="px-2 py-0.5 rounded bg-[#D32F2F] text-white text-[10px] font-black uppercase">
+                  Emergency 2-Tap Report Mode
+                </span>
+                <h3 className="text-sm font-black text-red-950 mt-1">
+                  Camera + GPS Fast Dispatch (Optional fields collapsed for 2-tap speed)
+                </h3>
+              </div>
+              <button
+                type="button"
+                data-testid="toggle-optional-fields-btn"
+                onClick={() => setShowOptionalFields(!showOptionalFields)}
+                className="px-3.5 py-2 bg-white hover:bg-red-100 text-red-900 border border-red-300 rounded-xl text-xs font-extrabold shrink-0 cursor-pointer"
+              >
+                {showOptionalFields ? 'Collapse Optional Fields' : 'Expand Full Form Details'}
+              </button>
+            </div>
+          )}
+
           {/* Tabs: Photo Report vs SMS Text Report */}
           <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200">
             <button
               type="button"
               onClick={() => setReportTab('photo')}
-              className={`flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all ${
+              className={`flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${
                 reportTab === 'photo'
                   ? 'bg-white text-[#101A3A] shadow-xs'
                   : 'text-slate-500 hover:text-slate-900'
@@ -600,7 +643,7 @@ export const ReportPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setReportTab('sms')}
-              className={`flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all ${
+              className={`flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${
                 reportTab === 'sms'
                   ? 'bg-white text-[#101A3A] shadow-xs'
                   : 'text-slate-500 hover:text-slate-900'
@@ -761,245 +804,254 @@ export const ReportPage: React.FC = () => {
               {gpsError && <span className="text-amber-600 ml-auto text-[11px] font-semibold">{gpsError}</span>}
             </div>
 
-            {/* Live Leaflet Map Pin Preview */}
-            <div className="space-y-1">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-                Plotted Location on Live Leaflet Map
-              </span>
-              <LeafletMap
-                incidents={[
-                  {
-                    id: 'NEW_REPORT',
-                    location: locationName || 'Selected Location',
-                    lat,
-                    lng,
-                    obstruction,
-                    hazard: hasLiveWire ? 'live_electrical_wire' : 'none',
-                    priority_score: 8.5,
-                    severity: 'Critical',
-                    roadType,
-                    zone,
-                    status: 'Pending',
-                    source: 'Photo',
-                    equipment: 'Chainsaw',
-                    createdAt: 'Just now',
-                    updatedAt: 'Just now',
-                    reportedBy: 'Field Reporter',
-                    verified: false,
-                    pinnedToMap: true,
-                    lastUpdatedBy: 'User',
-                    history: [],
-                    priorityHistory: [],
-                    sample: false,
-                  },
-                ]}
-                height="220px"
-                center={[lat, lng]}
-                zoom={14}
-              />
-            </div>
+            {/* Live Leaflet Map Pin Preview (Shown when optional fields expanded) */}
+            {showOptionalFields && (
+              <div className="space-y-1">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                  Plotted Location on Live Leaflet Map
+                </span>
+                <LeafletMap
+                  incidents={[
+                    {
+                      id: 'NEW_REPORT',
+                      location: locationName || 'Selected Location',
+                      lat,
+                      lng,
+                      obstruction,
+                      hazard: hasLiveWire ? 'live_electrical_wire' : 'none',
+                      priority_score: 8.5,
+                      severity: 'Critical',
+                      roadType,
+                      zone,
+                      status: 'Pending',
+                      source: 'Photo',
+                      equipment: 'Chainsaw',
+                      createdAt: 'Just now',
+                      updatedAt: 'Just now',
+                      reportedBy: 'Field Reporter',
+                      verified: false,
+                      pinnedToMap: true,
+                      lastUpdatedBy: 'User',
+                      history: [],
+                      priorityHistory: [],
+                      sample: false,
+                    },
+                  ]}
+                  height="220px"
+                  center={[lat, lng]}
+                  zoom={14}
+                />
+              </div>
+            )}
           </div>
 
-          {/* 3. HAZARD DETAILS WITH BIG ONE-TAP ICON BUTTONS */}
+          {/* 3. HAZARD DETAILS WITH MODE-SPECIFIC HAZARD TYPES (Section 14.4) */}
           <div className="space-y-4">
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-              3. Hazard Severity & Obstruction Flags
+              3. {isFeatureOn('urgent_6_hazard_types') ? '6 Urgent Hazard Types Only (Emergency Mode)' : 'Hazard Severity & Everyday Obstruction Types'}
             </label>
 
-            {/* Obstruction Toggle */}
-            <div className="grid grid-cols-2 gap-3">
+            {/* Daily Mode: Everyday Hazard Types (fallen branch, waterlogged road, hanging wire, leaning tree) */}
+            {isFeatureOn('everyday_hazard_types') && (
+              <div
+                data-testid="everyday-hazard-types-group"
+                className="p-3.5 rounded-2xl bg-blue-50/50 border border-blue-200 space-y-2"
+              >
+                <span className="text-[11px] font-extrabold uppercase text-[#2457C5] block">
+                  Everyday Hazard Types (Daily Mode)
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { label: 'Fallen branch', obs: 'single_lane' as const, wire: false, water: false },
+                    { label: 'Waterlogged road', obs: 'single_lane' as const, wire: false, water: true },
+                    { label: 'Hanging wire', obs: 'single_lane' as const, wire: true, water: false },
+                    { label: 'Leaning tree', obs: 'single_lane' as const, wire: false, water: false },
+                  ].map((item) => (
+                    <button
+                      key={item.label}
+                      type="button"
+                      onClick={() => {
+                        setEverydayHazardTag(item.label);
+                        setObstruction(item.obs);
+                        setHasLiveWire(item.wire);
+                        setHasWater(item.water);
+                        setNote(`${item.label} reported at ${locationName}`);
+                      }}
+                      className={`p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                        everydayHazardTag === item.label
+                          ? 'bg-[#2457C5] text-white border-[#2457C5]'
+                          : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Obstruction Toggle (2 of the 6 urgent types: Fully blocked, One lane) */}
+            <div className="grid grid-cols-2 gap-3" data-testid="urgent-6-hazard-types-grid">
               <button
                 type="button"
                 onClick={() => setObstruction('complete_block')}
-                className={`p-4 rounded-2xl border-2 text-left transition-all ${
+                className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer ${
                   obstruction === 'complete_block'
                     ? 'border-[#D32F2F] bg-red-50/50 shadow-xs'
                     : 'border-slate-200 hover:border-slate-300 bg-white'
                 }`}
               >
-                <strong className="block text-sm font-black text-slate-900">Road fully blocked</strong>
+                <strong className="block text-sm font-black text-slate-900">Fully blocked</strong>
                 <span className="text-xs text-slate-500">No vehicles can pass (+3.0 score)</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setObstruction('single_lane')}
-                className={`p-4 rounded-2xl border-2 text-left transition-all ${
+                className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer ${
                   obstruction === 'single_lane'
                     ? 'border-[#2457C5] bg-blue-50/50 shadow-xs'
                     : 'border-slate-200 hover:border-slate-300 bg-white'
                 }`}
               >
-                <strong className="block text-sm font-black text-slate-900">One lane blocked</strong>
+                <strong className="block text-sm font-black text-slate-900">One lane</strong>
                 <span className="text-xs text-slate-500">Narrow pass available (+1.5 score)</span>
               </button>
             </div>
 
-            {/* Hazard quick toggles */}
+            {/* Remaining 4 Urgent Hazard Types: Live wire, Tree, Pole, Water */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               <button
                 type="button"
                 onClick={() => setHasLiveWire(!hasLiveWire)}
-                className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 transition-all ${
+                className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
                   hasLiveWire
                     ? 'border-red-500 bg-red-50 text-red-700'
                     : 'border-slate-200 bg-white text-slate-600'
                 }`}
               >
                 <Zap className="w-4 h-4 text-red-600" />
-                <span>Live Wire</span>
+                <span>Live wire</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setHasTree(!hasTree)}
-                className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 transition-all ${
+                className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
                   hasTree
                     ? 'border-green-500 bg-green-50 text-green-800'
                     : 'border-slate-200 bg-white text-slate-600'
                 }`}
               >
                 <TreePine className="w-4 h-4 text-green-700" />
-                <span>Fallen Tree</span>
+                <span>Tree</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setHasPole(!hasPole)}
-                className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 transition-all ${
+                className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
                   hasPole
                     ? 'border-amber-500 bg-amber-50 text-amber-800'
                     : 'border-slate-200 bg-white text-slate-600'
                 }`}
               >
                 <AlertTriangle className="w-4 h-4 text-amber-600" />
-                <span>Snapped Pole</span>
+                <span>Pole</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setHasWater(!hasWater)}
-                className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 transition-all ${
+                className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
                   hasWater
                     ? 'border-blue-500 bg-blue-50 text-[#2457C5]'
                     : 'border-slate-200 bg-white text-slate-600'
                 }`}
               >
                 <Sparkles className="w-4 h-4 text-blue-600" />
-                <span>Waterlogged</span>
+                <span>Water</span>
               </button>
             </div>
 
-            {/* Road Type Priority */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">
-                Road Lifeline Classification
-              </label>
-              <select
-                value={roadType}
-                onChange={(e) => setRoadType(e.target.value as RoadType)}
-                className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-[#2457C5]"
-              >
-                <option value="Hospital Route">Hospital Route (Highest Priority Lifeline)</option>
-                <option value="Emergency Shelter">Emergency Shelter Access Road</option>
-                <option value="Major Artery">Major Artery / Highway</option>
-                <option value="Industrial Lifeline">Industrial Lifeline (Oxygen / Fuel)</option>
-                <option value="Transit Route">Transit Route / Bus Corridor</option>
-                <option value="Standard Road">Standard Secondary Road</option>
-                <option value="Commercial">Commercial Market Road</option>
-                <option value="Residential">Residential Colony Lane</option>
-              </select>
-            </div>
-
-            {/* Hands-free Voice Input & Notes Card */}
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50/40 border border-slate-200 space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            {/* Optional Road Type & Voice Notes (Expanded in Daily mode, collapsed by default in Emergency mode for 2-tap speed) */}
+            {showOptionalFields && (
+              <>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-extrabold text-xs uppercase tracking-wider text-[#2457C5]">
-                      Hands-Free Voice Input (Web Speech API)
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-[#2457C5]">
-                      {language === 'te' ? 'Telugu (te-IN)' : language === 'hi' ? 'Hindi (hi-IN)' : 'English (en-IN)'}
-                    </span>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    Road Lifeline Classification
+                  </label>
+                  <select
+                    value={roadType}
+                    onChange={(e) => setRoadType(e.target.value as RoadType)}
+                    className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-[#2457C5]"
+                  >
+                    <option value="Hospital Route">Hospital Route (Highest Priority Lifeline)</option>
+                    <option value="Emergency Shelter">Emergency Shelter Access Road</option>
+                    <option value="Major Artery">Major Artery / Highway</option>
+                    <option value="Industrial Lifeline">Industrial Lifeline (Oxygen / Fuel)</option>
+                    <option value="Transit Route">Transit Route / Bus Corridor</option>
+                    <option value="Standard Road">Standard Secondary Road</option>
+                    <option value="Commercial">Commercial Market Road</option>
+                    <option value="Residential">Residential Colony Lane</option>
+                  </select>
+                </div>
+
+                {/* Hands-free Voice Input & Notes Card */}
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50/40 border border-slate-200 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-extrabold text-xs uppercase tracking-wider text-[#2457C5]">
+                          Hands-Free Voice Input (Web Speech API)
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-[#2457C5]">
+                          {language === 'te' ? 'Telugu (te-IN)' : language === 'hi' ? 'Hindi (hi-IN)' : 'English (en-IN)'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Field officers can speak hazard details directly without typing.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={toggleSpeechRecognition}
+                      className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md ${
+                        isListening
+                          ? 'bg-red-600 text-white animate-pulse shadow-red-500/30'
+                          : 'bg-[#2457C5] hover:bg-blue-700 text-white'
+                      }`}
+                    >
+                      {isListening ? (
+                        <>
+                          <MicOff className="w-4 h-4 animate-bounce" />
+                          <span>Stop Voice Recording</span>
+                        </>
+                      ) : (
+                        <>
+                          <Mic className="w-4 h-4" />
+                          <span>Start Voice Description</span>
+                        </>
+                      )}
+                    </button>
                   </div>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Field officers can speak hazard details directly without typing.
-                  </p>
-                </div>
 
-                <button
-                  type="button"
-                  onClick={toggleSpeechRecognition}
-                  className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md ${
-                    isListening
-                      ? 'bg-red-600 text-white animate-pulse shadow-red-500/30'
-                      : 'bg-[#2457C5] hover:bg-blue-700 text-white'
-                  }`}
-                >
-                  {isListening ? (
-                    <>
-                      <MicOff className="w-4 h-4 animate-bounce" />
-                      <span>Stop Voice Recording</span>
-                    </>
-                  ) : (
-                    <>
-                      <Mic className="w-4 h-4" />
-                      <span>Start Voice Description</span>
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Listening Active Wave Indicator */}
-              {isListening && (
-                <div className="p-3 bg-red-500/10 border border-red-300 rounded-xl flex items-center justify-between gap-3 text-red-700 animate-in fade-in">
-                  <div className="flex items-center gap-2">
-                    <span className="relative flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
-                    </span>
-                    <span className="text-xs font-extrabold">Listening live... Speak clearly now</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="w-1 h-3 bg-red-500 animate-pulse" />
-                    <span className="w-1 h-5 bg-red-600 animate-pulse delay-75" />
-                    <span className="w-1 h-2 bg-red-400 animate-pulse delay-150" />
-                    <span className="w-1 h-4 bg-red-500 animate-pulse delay-100" />
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Field Notes & Voice Description
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      placeholder="Describe obstruction, electrical risk, or vehicle access notes..."
+                      className="w-full p-3 bg-white border border-slate-300 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:border-[#2457C5] shadow-inner"
+                    />
                   </div>
                 </div>
-              )}
-
-              {/* Interim Real-Time Transcript Preview */}
-              {interimTranscript && (
-                <div className="p-2.5 bg-white border border-blue-200 rounded-xl text-xs font-semibold text-[#2457C5] flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 flex-shrink-0 animate-spin" />
-                  <span>Hearing: &ldquo;{interimTranscript}&rdquo;</span>
-                </div>
-              )}
-
-              {/* Speech Error Banner */}
-              {speechError && (
-                <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs font-semibold text-amber-800 flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 flex-shrink-0 text-amber-600" />
-                  <span>{speechError}</span>
-                </div>
-              )}
-
-              {/* Field Notes Textarea */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Field Notes & Voice Description
-                </label>
-                <textarea
-                  rows={2}
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  placeholder="Describe obstruction, electrical risk, or vehicle access notes (or tap Start Voice Description above)..."
-                  className="w-full p-3 bg-white border border-slate-300 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:border-[#2457C5] shadow-inner"
-                />
-              </div>
-            </div>
+              </>
+            )}
           </div>
 
           {/* Validation Error Message */}
