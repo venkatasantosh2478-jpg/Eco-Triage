@@ -800,7 +800,27 @@ export function loadHeroes(): HeroProfile[] {
       saveHeroes(SAMPLE_HEROES);
       return SAMPLE_HEROES;
     }
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      saveHeroes(SAMPLE_HEROES);
+      return SAMPLE_HEROES;
+    }
+    // Ensure every hero has a unique id and valid numeric thankCount
+    const seenIds = new Set<string>();
+    const normalized: HeroProfile[] = parsed.map((h: any, idx: number) => {
+      let id = h.id ? String(h.id) : `hero_${idx + 1}`;
+      if (seenIds.has(id)) {
+        id = `${id}_${idx + 1}`;
+      }
+      seenIds.add(id);
+      return {
+        ...h,
+        id,
+        thankCount: typeof h.thankCount === 'number' && !Number.isNaN(h.thankCount) ? h.thankCount : 0,
+        status: h.status || 'approved',
+      };
+    });
+    return normalized;
   } catch {
     return SAMPLE_HEROES;
   }

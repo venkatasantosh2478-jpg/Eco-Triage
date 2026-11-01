@@ -1,18 +1,12 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext.tsx';
 import { Language, TextSize } from '../types.ts';
+import { t } from '../utils/translations.ts';
 import {
   AlertTriangle,
   ChevronDown,
   Globe,
-  LogOut,
-  MapPin,
-  Menu,
   Shield,
-  User,
-  Wifi,
-  WifiOff,
-  Sparkles,
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -22,60 +16,61 @@ export const Header: React.FC = () => {
     language,
     setLanguage,
     simpleWords,
-    setSimpleWords,
     textSize,
     setTextSize,
     currentUser,
     currentRole,
     setIsAuthModalOpen,
-    signOut,
-    networkStatus,
-    lastSyncedTime,
-    hasPermission,
-    queuedCount,
   } = useApp();
 
   const [opsDropdownOpen, setOpsDropdownOpen] = useState(false);
 
+  // "Home" link removed because clicking the EcoTriage brand logo redirects directly to Home
   const navLinks = [
-    { id: 'home', label: 'Home' },
-    { id: 'report', label: 'Report' },
-    { id: 'map', label: 'Live Map' },
-    { id: 'queue', label: 'Queue' },
-    { id: 'help', label: 'Nearby Help' },
-    { id: 'contacts', label: 'Emergency Contacts' },
-    { id: 'precautions', label: 'Precautions' },
-    { id: 'history', label: 'Cyclone History' },
-    { id: 'heroes', label: 'Our Heroes' },
-    { id: 'about', label: 'About' },
+    { id: 'report', label: t('report', language, simpleWords) },
+    { id: 'map', label: t('liveMap', language, simpleWords) },
+    { id: 'queue', label: t('queue', language, simpleWords) },
+    { id: 'help', label: t('nearbyHelp', language, simpleWords) },
+    { id: 'contacts', label: t('emergencyContacts', language, simpleWords) },
+    { id: 'precautions', label: t('precautions', language, simpleWords) },
+    { id: 'history', label: t('cycloneHistory', language, simpleWords) },
+    { id: 'heroes', label: t('ourHeroes', language, simpleWords) },
+    { id: 'about', label: t('about', language, simpleWords) },
   ];
 
   const staffOpsLinks = [
-    { id: 'dashboard', label: 'Dashboard', roles: ['viewer', 'field', 'command', 'admin'] },
-    { id: 'my-reports', label: 'My Reports', roles: ['field', 'command', 'admin'] },
-    { id: 'my-assignments', label: 'My Assignments', roles: ['field', 'command', 'admin'] },
-    { id: 'verify-reports', label: 'Verify Reports', roles: ['command', 'admin'] },
-    { id: 'alerts', label: 'Alerts Manager', roles: ['command', 'admin'] },
-    { id: 'content-manager', label: 'Content Manager', roles: ['admin'] },
-    { id: 'activity-log', label: 'Activity Log', roles: ['admin'] },
+    { id: 'dashboard', label: t('dashboard', language, simpleWords), roles: ['viewer', 'field', 'command', 'admin'] },
+    { id: 'my-reports', label: t('myReports', language, simpleWords), roles: ['field', 'command', 'admin'] },
+    { id: 'my-assignments', label: t('myAssignments', language, simpleWords), roles: ['field', 'command', 'admin'] },
+    { id: 'verify-reports', label: t('verifyReports', language, simpleWords), roles: ['command', 'admin'] },
+    { id: 'alerts', label: t('alertsShort', language, simpleWords), roles: ['command', 'admin'] },
+    { id: 'content-manager', label: t('contentManager', language, simpleWords), roles: ['admin'] },
+    { id: 'activity-log', label: t('activityLog', language, simpleWords), roles: ['admin'] },
   ];
 
   const accessibleOpsLinks = staffOpsLinks.filter(
     (item) => currentUser && item.roles.includes(currentUser.role)
   );
 
+  const cycleTextSize = () => {
+    const order: TextSize[] = ['normal', 'large', 'xlarge'];
+    const nextIdx = (order.indexOf(textSize) + 1) % order.length;
+    setTextSize(order[nextIdx]);
+  };
+
   return (
     <header className="sticky top-10 z-40 bg-white border-b border-[#E2E7F0] shadow-xs">
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 h-[72px] flex items-center justify-between gap-4">
-        {/* Brand: Logo + Name + Subtitle */}
+      <div className="max-w-[1440px] mx-auto px-3 sm:px-5 h-[68px] flex items-center justify-between gap-2">
+        {/* Brand: Logo + Name + Subtitle (Clicking redirects to Home) */}
         <button
           onClick={() => setActivePage('home')}
-          className="flex items-center gap-3 text-left focus:outline-none group flex-shrink-0"
+          title="Return to EcoTriage Home"
+          aria-label="EcoTriage Home"
+          className="flex items-center gap-2.5 text-left focus:outline-none group flex-shrink-0 cursor-pointer"
         >
-          {/* Custom Pin-with-Leaf SVG logo */}
-          <div className="w-10 h-10 rounded-xl bg-[#2457C5]/10 border border-[#2457C5]/20 flex items-center justify-center text-[#2457C5] group-hover:bg-[#2457C5] group-hover:text-white transition-all shadow-xs">
+          <div className="w-9 h-9 rounded-xl bg-[#2457C5]/10 border border-[#2457C5]/20 flex items-center justify-center text-[#2457C5] group-hover:bg-[#2457C5] group-hover:text-white transition-all shadow-xs">
             <svg
-              className="w-6 h-6"
+              className="w-5 h-5"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -89,26 +84,28 @@ export const Header: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-xl font-extrabold tracking-tight text-[#101A3A]">EcoTriage</span>
+              <span className="text-lg font-extrabold tracking-tight text-[#101A3A]">
+                {t('appName', language, simpleWords)}
+              </span>
               <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-100 text-[#2457C5]">
-                Vizag
+                {t('vizagBadge', language, simpleWords)}
               </span>
             </div>
-            <p className="text-[11px] font-medium text-[#657187] tracking-tight leading-none">
-              Emergency Hazard Intelligence
+            <p className="text-[10px] font-medium text-[#657187] tracking-tight leading-none hidden sm:block">
+              {t('subtitle', language, simpleWords)}
             </p>
           </div>
         </button>
 
         {/* Center Navigation Links (Desktop) */}
-        <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1 py-2">
+        <nav className="hidden lg:flex items-center justify-center gap-0.5 xl:gap-1 py-1.5 flex-1 min-w-0">
           {navLinks.map((link) => {
             const isActive = activePage === link.id;
             return (
               <button
                 key={link.id}
                 onClick={() => setActivePage(link.id)}
-                className={`px-2 xl:px-2.5 py-1 text-xs xl:text-sm font-semibold rounded-lg transition-all relative whitespace-nowrap ${
+                className={`px-2 xl:px-2.5 py-1.5 text-xs font-semibold rounded-lg transition-all relative whitespace-nowrap ${
                   isActive
                     ? 'text-[#2457C5] bg-[#EAF0FF]'
                     : 'text-[#182338] hover:text-[#2457C5] hover:bg-slate-50'
@@ -127,13 +124,13 @@ export const Header: React.FC = () => {
             <div className="relative">
               <button
                 onClick={() => setOpsDropdownOpen(!opsDropdownOpen)}
-                className={`px-2 xl:px-2.5 py-1 text-xs xl:text-sm font-semibold rounded-lg transition-all flex items-center gap-1 whitespace-nowrap ${
+                className={`px-2 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1 whitespace-nowrap ${
                   staffOpsLinks.some((l) => l.id === activePage)
                     ? 'text-[#2457C5] bg-[#EAF0FF]'
                     : 'text-[#182338] hover:text-[#2457C5] hover:bg-slate-50'
                 }`}
               >
-                <span>Ops</span>
+                <span>{t('ops', language, simpleWords)}</span>
                 <ChevronDown className="w-3.5 h-3.5" />
               </button>
 
@@ -166,63 +163,61 @@ export const Header: React.FC = () => {
           )}
         </nav>
 
-        {/* Right Controls: Language Selector, Text Size, Report Button */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-          {/* Language Selector Dropdown */}
-          <div className="flex items-center gap-1 bg-slate-100 hover:bg-slate-200/80 rounded-xl px-2 py-1.5 border border-slate-200 text-xs font-bold transition-all">
-            <Globe className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+        {/* Right Controls: Minimized Language Switcher, Compact Text Size, Officer Role Button, Report Button */}
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          {/* Minimized Language Selector */}
+          <div className="flex items-center bg-slate-100 hover:bg-slate-200/80 rounded-lg px-1.5 py-1 border border-slate-200 transition-all">
+            <Globe className="w-3 h-3 text-slate-500 shrink-0 mr-0.5" />
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value as Language)}
-              className="bg-transparent border-none text-xs font-bold text-slate-800 focus:outline-none cursor-pointer pr-1 py-0.5"
+              className="bg-transparent border-none text-[11px] font-extrabold text-slate-800 focus:outline-none cursor-pointer py-0"
               aria-label="Select Language"
+              title="Switch Language (English / తెలుగు / हिन्दी)"
             >
               <option value="en">EN</option>
-              <option value="te">తెలుగు</option>
-              <option value="hi">हिन्दी</option>
+              <option value="te">తె</option>
+              <option value="hi">हि</option>
             </select>
           </div>
 
-          {/* Text Size Control */}
-          <div className="hidden lg:flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200 text-xs font-bold">
-            <button
-              onClick={() => setTextSize('normal')}
-              className={`px-1.5 py-0.5 rounded transition-all text-xs ${
-                textSize === 'normal' ? 'bg-white text-[#2457C5] shadow-xs' : 'text-slate-600'
-              }`}
-              title="Standard Text Size"
-            >
-              A
-            </button>
-            <button
-              onClick={() => setTextSize('large')}
-              className={`px-1.5 py-0.5 rounded transition-all text-sm font-semibold ${
-                textSize === 'large' ? 'bg-white text-[#2457C5] shadow-xs' : 'text-slate-600'
-              }`}
-              title="Large Text Size"
-            >
-              A
-            </button>
-            <button
-              onClick={() => setTextSize('xlarge')}
-              className={`px-1.5 py-0.5 rounded transition-all text-base font-bold ${
-                textSize === 'xlarge' ? 'bg-white text-[#2457C5] shadow-xs' : 'text-slate-600'
-              }`}
-              title="Extra Large Text Size"
-            >
-              A
-            </button>
-          </div>
+          {/* Minimized Single-Tap Text Size Button */}
+          <button
+            onClick={cycleTextSize}
+            className="hidden xl:flex items-center justify-center w-7 h-7 bg-slate-100 hover:bg-slate-200 rounded-lg border border-slate-200 text-[11px] font-extrabold text-slate-700 transition-all"
+            title={`Text Size: ${textSize} (Click to cycle)`}
+            aria-label="Cycle Text Size"
+          >
+            {textSize === 'normal' ? 'A' : textSize === 'large' ? 'A+' : 'A++'}
+          </button>
+
+          {/* Compact Officer / Role Access Button */}
+          <button
+            onClick={() => setIsAuthModalOpen(true)}
+            className={`hidden sm:flex items-center gap-1 px-2 py-1.5 rounded-lg border text-[11px] font-bold transition-all whitespace-nowrap ${
+              currentRole !== 'public'
+                ? 'bg-blue-50 border-blue-200 text-[#2457C5]'
+                : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700'
+            }`}
+            title="Officer Sign In / Switch Role"
+          >
+            <Shield className="w-3.5 h-3.5" />
+            <span>
+              {currentRole !== 'public'
+                ? currentRole.toUpperCase()
+                : t('officerLoginShort', language, simpleWords)}
+            </span>
+          </button>
 
           {/* MAIN ACTION: Solid Red "Report Hazard" button */}
           <button
             onClick={() => setActivePage('report')}
-            className="flex items-center gap-1.5 sm:gap-2 bg-[#D32F2F] hover:bg-[#b71c1c] active:scale-[0.98] text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all whitespace-nowrap"
+            className="flex items-center gap-1.5 bg-[#D32F2F] hover:bg-[#b71c1c] active:scale-[0.98] text-white px-2.5 sm:px-3.5 py-2 rounded-xl font-bold text-xs shadow-md hover:shadow-lg transition-all whitespace-nowrap"
             aria-label="Report Hazard immediately"
           >
-            <AlertTriangle className="w-4 h-4" />
-            <span className="hidden sm:inline">Report Hazard</span>
-            <span className="sm:hidden">Report</span>
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden sm:inline">{t('reportHazard', language, simpleWords)}</span>
+            <span className="sm:hidden">{t('report', language, simpleWords)}</span>
           </button>
         </div>
       </div>

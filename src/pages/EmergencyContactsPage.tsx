@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext.tsx';
 import { EmergencyContact } from '../utils/modeConfig.ts';
+import { t } from '../utils/translations.ts';
 import {
   Phone,
   Search,
-  ShieldCheck,
   Plus,
   X,
   Building,
@@ -25,6 +25,8 @@ export const EmergencyContactsPage: React.FC = () => {
     updateVolunteerStatus,
     currentRole,
     operatingMode,
+    language,
+    simpleWords,
   } = useApp();
 
   const [activeCategory, setActiveCategory] = useState<string>(
@@ -135,11 +137,13 @@ export const EmergencyContactsPage: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1">
             <span className="text-[10px] font-extrabold uppercase tracking-widest text-cyan-400 bg-cyan-950/80 px-2.5 py-0.5 rounded-full">
-              Standard National Lifelines
+              {t('contactsBadge', language, simpleWords)}
             </span>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Emergency Contacts Directory</h1>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
+              {t('contactsTitle', language, simpleWords)}
+            </h1>
             <p className="text-xs sm:text-sm text-slate-300">
-              Verified control rooms, medical trauma centers, and disaster response units for Visakhapatnam.
+              {t('contactsSub', language, simpleWords)}
             </p>
           </div>
 
@@ -149,7 +153,7 @@ export const EmergencyContactsPage: React.FC = () => {
               className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-lg active:scale-95 transition-all"
             >
               <Heart className="w-4 h-4 fill-white" />
-              <span>Join as Volunteer</span>
+              <span>{t('joinVolunteerBtn', language, simpleWords)}</span>
             </button>
 
             <button
@@ -157,7 +161,7 @@ export const EmergencyContactsPage: React.FC = () => {
               className="px-4 py-2.5 bg-[#2457C5] hover:bg-blue-600 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-lg active:scale-95 transition-all"
             >
               <Plus className="w-4 h-4" />
-              <span>Suggest Contact</span>
+              <span>{t('suggestContactBtn', language, simpleWords)}</span>
             </button>
           </div>
         </div>

@@ -13,7 +13,9 @@ export const ModeManagerModal: React.FC<{ isOpen: boolean; onClose: () => void }
 
   if (!isOpen) return null;
 
-  const isAdmin = currentRole === 'admin';
+  const isOfficerCanSwitch =
+    currentRole === 'admin' || currentRole === 'command' || currentRole === 'field';
+  const isAdmin = isOfficerCanSwitch;
 
   const handleInitiateSwitch = (targetMode: OperatingMode) => {
     if (targetMode === operatingMode) return;
@@ -41,7 +43,7 @@ export const ModeManagerModal: React.FC<{ isOpen: boolean; onClose: () => void }
             </span>
             <div>
               <h3 className="font-extrabold text-base text-[#101A3A]">System Operating Mode Control</h3>
-              <span className="text-[11px] text-slate-500">Global setting across all open user sessions</span>
+              <span className="text-[11px] text-slate-500">Officer control across all active sessions</span>
             </div>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
@@ -52,7 +54,7 @@ export const ModeManagerModal: React.FC<{ isOpen: boolean; onClose: () => void }
         {!isAdmin && (
           <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 font-semibold flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-            <span>Only Administrators can change the operating mode. You are currently viewing as [{currentRole}].</span>
+            <span>Only Municipal Officers can change the operating mode. You are currently viewing as [{currentRole}].</span>
           </div>
         )}
 

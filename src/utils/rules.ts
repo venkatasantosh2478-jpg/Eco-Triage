@@ -122,3 +122,56 @@ export function calculateDistance(
   const d = R * c;
   return Math.round(d * 10) / 10;
 }
+
+export function getModeBannerVisibility(
+  currentRole: string,
+  operatingMode: 'daily' | 'emergency'
+): {
+  showOfficerModeBar: boolean;
+  showEmergencyAlertBanner: boolean;
+  canManageMode: boolean;
+} {
+  const isOfficer = currentRole !== 'public';
+  const isEmergency = operatingMode === 'emergency';
+  return {
+    showOfficerModeBar: isOfficer,
+    showEmergencyAlertBanner: isEmergency,
+    canManageMode: currentRole === 'admin' || currentRole === 'command' || currentRole === 'field',
+  };
+}
+
+export function toggleHeroSaluteState<T extends { id: string; name: string; thankCount: number }>(
+  heroes: T[],
+  likedHeroIds: string[],
+  targetHeroId: string
+): {
+  updatedHeroes: T[];
+  updatedLikedIds: string[];
+  isNowLiked: boolean;
+  heroName: string;
+} {
+  const safeLikedIds = Array.isArray(likedHeroIds) ? likedHeroIds : [];
+  const isAlreadyLiked = safeLikedIds.includes(targetHeroId);
+  const updatedLikedIds = isAlreadyLiked
+    ? safeLikedIds.filter((id) => id !== targetHeroId)
+    : [...safeLikedIds, targetHeroId];
+
+  let heroName = 'Hero';
+  const updatedHeroes = heroes.map((h) => {
+    if (h.id === targetHeroId) {
+      heroName = h.name;
+      const baseCount = typeof h.thankCount === 'number' && !Number.isNaN(h.thankCount) ? h.thankCount : 0;
+      const newCount = isAlreadyLiked ? Math.max(0, baseCount - 1) : baseCount + 1;
+      return { ...h, thankCount: newCount };
+    }
+    return h;
+  });
+
+  return {
+    updatedHeroes,
+    updatedLikedIds,
+    isNowLiked: !isAlreadyLiked,
+    heroName,
+  };
+}
+

@@ -106,7 +106,7 @@ export const HomePage: React.FC = () => {
           <div className="lg:col-span-7 space-y-6 text-white">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-xs font-bold tracking-wide uppercase">
               <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-              <span>Visakhapatnam Emergency Response</span>
+              <span>{t('vizagResponseBadge', language, simpleWords)}</span>
             </div>
 
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-[1.15] max-w-xl">
@@ -160,23 +160,23 @@ export const HomePage: React.FC = () => {
             <div className="bg-white/95 backdrop-blur-md rounded-2xl p-5 shadow-2xl border border-white/40 w-full max-w-sm text-slate-800">
               <div className="pb-3 border-b border-slate-100 mb-3 flex items-center justify-between">
                 <h3 className="font-extrabold text-base text-[#101A3A] tracking-tight">
-                  Quick Access. Real Help.
+                  {t('quickAccessTitle', language, simpleWords)}
                 </h3>
                 <span className="text-[10px] font-bold uppercase bg-blue-100 text-[#2457C5] px-2 py-0.5 rounded-full">
-                  Direct
+                  {t('directBadge', language, simpleWords)}
                 </span>
               </div>
 
               <div className="space-y-1">
                 <button
-                  onClick={() => setActivePage('help')}
+                  onClick={() => setActivePage('contacts')}
                   className="w-full p-2.5 rounded-xl hover:bg-slate-50 flex items-center justify-between text-xs font-bold text-slate-700 transition-colors group"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center group-hover:scale-105 transition-transform">
                       <Phone className="w-4 h-4" />
                     </div>
-                    <span>Emergency Contacts (112, 108)</span>
+                    <span>{t('quickEmergencyContacts', language, simpleWords)}</span>
                   </div>
                   <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
                 </button>
@@ -189,7 +189,7 @@ export const HomePage: React.FC = () => {
                     <div className="w-8 h-8 rounded-lg bg-blue-50 text-[#2457C5] flex items-center justify-center group-hover:scale-105 transition-transform">
                       <Compass className="w-4 h-4" />
                     </div>
-                    <span>Live Operational Map</span>
+                    <span>{t('quickLiveMap', language, simpleWords)}</span>
                   </div>
                   <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
                 </button>
@@ -202,7 +202,7 @@ export const HomePage: React.FC = () => {
                     <div className="w-8 h-8 rounded-lg bg-green-50 text-green-700 flex items-center justify-center group-hover:scale-105 transition-transform">
                       <LifeBuoy className="w-4 h-4" />
                     </div>
-                    <span>Relief Camps & Free Beds</span>
+                    <span>{t('quickReliefCamps', language, simpleWords)}</span>
                   </div>
                   <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
                 </button>
@@ -215,7 +215,7 @@ export const HomePage: React.FC = () => {
                     <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-105 transition-transform">
                       <AlertTriangle className="w-4 h-4" />
                     </div>
-                    <span>Alerts & Warnings</span>
+                    <span>{t('quickAlerts', language, simpleWords)}</span>
                   </div>
                   <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
                 </button>
@@ -228,7 +228,7 @@ export const HomePage: React.FC = () => {
                     <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center group-hover:scale-105 transition-transform">
                       <Users className="w-4 h-4" />
                     </div>
-                    <span>Staff Sign In / Roles</span>
+                    <span>{t('quickStaffSignIn', language, simpleWords)}</span>
                   </div>
                   <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
                 </button>
@@ -249,11 +249,13 @@ export const HomePage: React.FC = () => {
             <LifeBuoy className="w-5 h-5" />
           </div>
           <h3 className="font-extrabold text-sm text-[#101A3A] group-hover:text-[#2457C5] transition-colors">
-            Nearby Relief Camps
+            {t('cardReliefTitle', language, simpleWords)}
           </h3>
-          <p className="text-xs text-slate-500 mt-1 mb-3">Find safe shelters & free bed capacities near you</p>
+          <p className="text-xs text-slate-500 mt-1 mb-3">
+            {t('cardReliefDesc', language, simpleWords)}
+          </p>
           <div className="flex items-center text-xs font-bold text-green-700 group-hover:translate-x-1 transition-transform">
-            <span>Check Capacity</span>
+            <span>{t('cardReliefAction', language, simpleWords)}</span>
             <ArrowRight className="w-3.5 h-3.5 ml-1" />
           </div>
         </div>
@@ -267,11 +269,13 @@ export const HomePage: React.FC = () => {
             <Phone className="w-5 h-5" />
           </div>
           <h3 className="font-extrabold text-sm text-[#101A3A] group-hover:text-[#2457C5] transition-colors">
-            Medical Help
+            {t('cardMedicalTitle', language, simpleWords)}
           </h3>
-          <p className="text-xs text-slate-500 mt-1 mb-3">Emergency hospital trauma bays & ambulance lines</p>
+          <p className="text-xs text-slate-500 mt-1 mb-3">
+            {t('cardMedicalDesc', language, simpleWords)}
+          </p>
           <div className="flex items-center text-xs font-bold text-red-600 group-hover:translate-x-1 transition-transform">
-            <span>Get Assistance</span>
+            <span>{t('cardMedicalAction', language, simpleWords)}</span>
             <ArrowRight className="w-3.5 h-3.5 ml-1" />
           </div>
         </div>
@@ -285,11 +289,13 @@ export const HomePage: React.FC = () => {
             <Shield className="w-5 h-5" />
           </div>
           <h3 className="font-extrabold text-sm text-[#101A3A] group-hover:text-[#2457C5] transition-colors">
-            Safety Precautions
+            {t('cardPrecautionsTitle', language, simpleWords)}
           </h3>
-          <p className="text-xs text-slate-500 mt-1 mb-3">Before, during, and after storm safety guidelines</p>
+          <p className="text-xs text-slate-500 mt-1 mb-3">
+            {t('cardPrecautionsDesc', language, simpleWords)}
+          </p>
           <div className="flex items-center text-xs font-bold text-amber-700 group-hover:translate-x-1 transition-transform">
-            <span>Stay Prepared</span>
+            <span>{t('cardPrecautionsAction', language, simpleWords)}</span>
             <ArrowRight className="w-3.5 h-3.5 ml-1" />
           </div>
         </div>
@@ -303,11 +309,13 @@ export const HomePage: React.FC = () => {
             <Heart className="w-5 h-5" />
           </div>
           <h3 className="font-extrabold text-sm text-[#101A3A] group-hover:text-[#2457C5] transition-colors">
-            Our Heroes
+            {t('cardHeroesTitle', language, simpleWords)}
           </h3>
-          <p className="text-xs text-slate-500 mt-1 mb-3">Salute the frontline municipal & electrical workers</p>
+          <p className="text-xs text-slate-500 mt-1 mb-3">
+            {t('cardHeroesDesc', language, simpleWords)}
+          </p>
           <div className="flex items-center text-xs font-bold text-[#2457C5] group-hover:translate-x-1 transition-transform">
-            <span>Send a Salute</span>
+            <span>{t('cardHeroesAction', language, simpleWords)}</span>
             <ArrowRight className="w-3.5 h-3.5 ml-1" />
           </div>
         </div>
@@ -318,7 +326,9 @@ export const HomePage: React.FC = () => {
         {/* Total Reports */}
         <div className="bg-white p-5 rounded-2xl border border-[#E2E7F0] shadow-xs">
           <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-            <span className="font-bold uppercase tracking-wider text-[11px]">Total Reports</span>
+            <span className="font-bold uppercase tracking-wider text-[11px]">
+              {t('statTotalReports', language, simpleWords)}
+            </span>
             <span className="text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded-full">↑ 12%</span>
           </div>
           <div className="flex items-baseline justify-between">
@@ -335,13 +345,17 @@ export const HomePage: React.FC = () => {
               />
             </svg>
           </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">Sample records active</span>
+          <span className="text-[11px] text-slate-400 mt-1 block">
+            {t('statSampleActive', language, simpleWords)}
+          </span>
         </div>
 
         {/* Critical Hazards */}
         <div className="bg-white p-5 rounded-2xl border border-red-200 bg-red-50/20 shadow-xs">
           <div className="flex items-center justify-between text-xs text-red-600 mb-1">
-            <span className="font-bold uppercase tracking-wider text-[11px]">Critical Hazards</span>
+            <span className="font-bold uppercase tracking-wider text-[11px]">
+              {t('statCriticalHazards', language, simpleWords)}
+            </span>
             <span className="text-red-700 font-bold bg-red-100 px-2 py-0.5 rounded-full">↑ 5%</span>
           </div>
           <div className="flex items-baseline justify-between">
@@ -357,13 +371,17 @@ export const HomePage: React.FC = () => {
               />
             </svg>
           </div>
-          <span className="text-[11px] text-red-500/80 mt-1 block">Live wire & lifeline blocks</span>
+          <span className="text-[11px] text-red-500/80 mt-1 block">
+            {t('statCriticalSub', language, simpleWords)}
+          </span>
         </div>
 
         {/* Response Crews */}
         <div className="bg-white p-5 rounded-2xl border border-[#E2E7F0] shadow-xs">
           <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-            <span className="font-bold uppercase tracking-wider text-[11px]">Response Crews</span>
+            <span className="font-bold uppercase tracking-wider text-[11px]">
+              {t('statResponseCrews', language, simpleWords)}
+            </span>
             <span className="text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-full">↑ 8%</span>
           </div>
           <div className="flex items-baseline justify-between">
@@ -379,13 +397,17 @@ export const HomePage: React.FC = () => {
               />
             </svg>
           </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">PWD, Electricity & Rescue</span>
+          <span className="text-[11px] text-slate-400 mt-1 block">
+            {t('statCrewsSub', language, simpleWords)}
+          </span>
         </div>
 
         {/* Hazards Cleared */}
         <div className="bg-white p-5 rounded-2xl border border-green-200 bg-green-50/20 shadow-xs">
           <div className="flex items-center justify-between text-xs text-green-700 mb-1">
-            <span className="font-bold uppercase tracking-wider text-[11px]">Hazards Cleared</span>
+            <span className="font-bold uppercase tracking-wider text-[11px]">
+              {t('statHazardsCleared', language, simpleWords)}
+            </span>
             <span className="text-green-800 font-bold bg-green-100 px-2 py-0.5 rounded-full">↑ 15%</span>
           </div>
           <div className="flex items-baseline justify-between">
@@ -401,7 +423,9 @@ export const HomePage: React.FC = () => {
               />
             </svg>
           </div>
-          <span className="text-[11px] text-green-700/80 mt-1 block">Roads reopened safely</span>
+          <span className="text-[11px] text-green-700/80 mt-1 block">
+            {t('statClearedSub', language, simpleWords)}
+          </span>
         </div>
       </section>
 
@@ -413,10 +437,10 @@ export const HomePage: React.FC = () => {
           </div>
           <div>
             <h4 className="font-extrabold text-sm sm:text-base text-[#101A3A]">
-              Live wire or fully blocked road?
+              {t('emergencyStripHeading', language, simpleWords)}
             </h4>
             <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
-              Report it first. It gets the highest automated priority in the municipal command queue.
+              {t('emergencyStripBody', language, simpleWords)}
             </p>
           </div>
         </div>
@@ -425,7 +449,7 @@ export const HomePage: React.FC = () => {
           onClick={() => setActivePage('report')}
           className="w-full sm:w-auto flex-shrink-0 bg-[#D32F2F] hover:bg-red-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow hover:shadow-md transition-all active:scale-95"
         >
-          Report Now
+          {t('reportNow', language, simpleWords)}
         </button>
       </section>
 
@@ -434,17 +458,17 @@ export const HomePage: React.FC = () => {
         <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
           <div>
             <h2 className="text-xl font-extrabold text-[#101A3A] tracking-tight">
-              Priority Open Incidents
+              {t('priorityIncidentsTitle', language, simpleWords)}
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Ranked in real time by the EcoTriage priority model
+              {t('priorityIncidentsSub', language, simpleWords)}
             </p>
           </div>
           <button
             onClick={() => setActivePage('queue')}
             className="text-xs font-bold text-[#2457C5] hover:underline flex items-center gap-1"
           >
-            <span>View full queue</span>
+            <span>{t('viewFullQueue', language, simpleWords)}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -495,7 +519,7 @@ export const HomePage: React.FC = () => {
                     {/* Score */}
                     <div className="text-right">
                       <span className="text-xs text-slate-400 block text-[10px] uppercase font-bold">
-                        Score
+                        {t('scoreLabel', language, simpleWords)}
                       </span>
                       <span className="text-base font-black text-[#101A3A]">
                         {inc.priority_score.toFixed(1)}
@@ -506,7 +530,7 @@ export const HomePage: React.FC = () => {
                     <span
                       className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${colors.bg} ${colors.text} ${colors.border}`}
                     >
-                      {inc.status}
+                      {t(inc.status, language, simpleWords)}
                     </span>
                   </div>
                 </div>
@@ -519,13 +543,13 @@ export const HomePage: React.FC = () => {
             <div className="flex items-center justify-between">
               <span className="text-xs font-extrabold text-[#101A3A] flex items-center gap-1.5">
                 <MapPin className="w-4 h-4 text-[#2457C5]" />
-                <span>Live Corridor Map (OSM)</span>
+                <span>{t('liveCorridorMap', language, simpleWords)}</span>
               </span>
               <button
                 onClick={() => setActivePage('map')}
                 className="text-xs font-bold text-[#2457C5] hover:underline flex items-center gap-1"
               >
-                <span>Full Map</span>
+                <span>{t('fullMap', language, simpleWords)}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -542,7 +566,7 @@ export const HomePage: React.FC = () => {
             />
 
             <div className="text-[11px] font-medium text-slate-500 bg-slate-50 p-2 rounded-xl border border-slate-200 text-center">
-              Click any hazard pin on the map to inspect live priority and details.
+              {t('mapClickHint', language, simpleWords)}
             </div>
           </div>
         </div>
@@ -552,13 +576,13 @@ export const HomePage: React.FC = () => {
       <section className="bg-slate-50 rounded-3xl p-6 sm:p-8 border border-slate-200">
         <div className="text-center max-w-xl mx-auto mb-8">
           <span className="text-xs font-extrabold uppercase tracking-wider text-[#2457C5]">
-            Operational Workflow
+            {t('workflowBadge', language, simpleWords)}
           </span>
           <h2 className="text-2xl font-black text-[#101A3A] tracking-tight mt-1">
-            How EcoTriage Works
+            {t('howItWorksTitle', language, simpleWords)}
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Accelerating road clearance by combining mobile field reporting, AI image inspection, and priority dispatch.
+            {t('howItWorksSub', language, simpleWords)}
           </p>
         </div>
 
@@ -571,9 +595,11 @@ export const HomePage: React.FC = () => {
             <div className="w-12 h-12 rounded-2xl bg-[#EAF0FF] text-[#2457C5] font-black text-lg flex items-center justify-center mb-4 shadow-xs">
               1
             </div>
-            <h3 className="font-extrabold text-sm text-[#101A3A] mb-1">Take a photo</h3>
+            <h3 className="font-extrabold text-sm text-[#101A3A] mb-1">
+              {t('step1Title', language, simpleWords)}
+            </h3>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Field squad captures obstruction on-site. GPS coordinates are automatically tagged, even with zero network.
+              {t('step1Desc', language, simpleWords)}
             </p>
           </div>
 
@@ -582,9 +608,11 @@ export const HomePage: React.FC = () => {
             <div className="w-12 h-12 rounded-2xl bg-[#EAF0FF] text-[#2457C5] font-black text-lg flex items-center justify-center mb-4 shadow-xs">
               2
             </div>
-            <h3 className="font-extrabold text-sm text-[#101A3A] mb-1">AI scores hazard</h3>
+            <h3 className="font-extrabold text-sm text-[#101A3A] mb-1">
+              {t('step2Title', language, simpleWords)}
+            </h3>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Gemini model reads tree blockage, detects live electrical wires, cross-checks hospital routes, and assigns 0-10 priority.
+              {t('step2Desc', language, simpleWords)}
             </p>
           </div>
 
@@ -593,9 +621,11 @@ export const HomePage: React.FC = () => {
             <div className="w-12 h-12 rounded-2xl bg-[#EAF0FF] text-[#2457C5] font-black text-lg flex items-center justify-center mb-4 shadow-xs">
               3
             </div>
-            <h3 className="font-extrabold text-sm text-[#101A3A] mb-1">Crew is sent</h3>
+            <h3 className="font-extrabold text-sm text-[#101A3A] mb-1">
+              {t('step3Title', language, simpleWords)}
+            </h3>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Command assigns heavy bulldozers or wire isolators instantly. Critical lifelines open hours ahead of standard schedules.
+              {t('step3Desc', language, simpleWords)}
             </p>
           </div>
         </div>
@@ -605,10 +635,10 @@ export const HomePage: React.FC = () => {
       <section className="space-y-4">
         <div>
           <span className="text-xs font-extrabold uppercase tracking-wider text-[#2457C5]">
-            Verified Impact Research
+            {t('whyMattersBadge', language, simpleWords)}
           </span>
           <h2 className="text-2xl font-black text-[#101A3A] tracking-tight">
-            Why Micro-Triage Matters
+            {t('whyMattersTitle', language, simpleWords)}
           </h2>
         </div>
 

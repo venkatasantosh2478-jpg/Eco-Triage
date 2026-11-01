@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext.tsx';
 import { HeroProfile } from '../types.ts';
+import { t } from '../utils/translations.ts';
 import {
   Heart,
   Plus,
-  Shield,
   Sparkles,
   Users,
   X,
@@ -26,6 +26,8 @@ export const OurHeroesPage: React.FC = () => {
     updateHero,
     deleteHero,
     currentRole,
+    language,
+    simpleWords,
   } = useApp();
 
   const [activeDept, setActiveDept] = useState<string>('All');
@@ -149,25 +151,31 @@ export const OurHeroesPage: React.FC = () => {
         <div className="relative z-10 max-w-xl space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-xs font-bold uppercase tracking-wide">
             <Award className="w-3.5 h-3.5 text-yellow-300" />
-            <span>Coastal Frontline Responders</span>
+            <span>{t('heroesBadge', language, simpleWords)}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-            Our Heroes (Disaster Responders)
+            {t('heroesTitle', language, simpleWords)}
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed">
-            Every frontline worker, municipal worker, electrician, and volunteer risks their safety to clear roads and save lives. Tap any card below to send a salute!
+            {t('heroesSub', language, simpleWords)}
           </p>
         </div>
 
         <div className="relative z-10 flex flex-wrap items-center gap-3 shrink-0">
           <div className="bg-white/10 backdrop-blur-md border border-white/20 p-3 rounded-2xl text-center min-w-[90px]">
             <span className="text-2xl font-black text-yellow-300 block">{heroes.length}</span>
-            <span className="text-[10px] uppercase font-bold text-slate-300">Responders</span>
+            <span className="text-[10px] uppercase font-bold text-slate-300">
+              {t('respondersCount', language, simpleWords)}
+            </span>
           </div>
 
           <div className="bg-white/10 backdrop-blur-md border border-white/20 p-3 rounded-2xl text-center min-w-[90px]">
-            <span className="text-2xl font-black text-red-400 block">{totalSalutes}</span>
-            <span className="text-[10px] uppercase font-bold text-slate-300">Total Salutes</span>
+            <span className="text-2xl font-black text-red-400 block" data-testid="total-salutes-count">
+              {totalSalutes}
+            </span>
+            <span className="text-[10px] uppercase font-bold text-slate-300">
+              {t('totalSalutes', language, simpleWords)}
+            </span>
           </div>
 
           <div className="flex flex-col gap-2">
@@ -186,16 +194,16 @@ export const OurHeroesPage: React.FC = () => {
               className="px-4 py-2.5 bg-[#2457C5] hover:bg-blue-600 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-lg transition-all active:scale-95"
             >
               <Plus className="w-4 h-4" />
-              <span>Add Family / Responder Hero</span>
+              <span>{t('addHeroBtn', language, simpleWords)}</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Featured "Hero of the Month" Card with 3D animation & per-user Salute toggle */}
+      {/* Featured "Hero of the Month" Card */}
       {heroOfMonth && (
-        <div className="perspective-1000">
-          <div className="hero-3d-card bg-gradient-to-r from-[#101A3A] via-[#1E40AF] to-[#2457C5] text-white rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center gap-6 transform transition-all duration-300 hover:scale-[1.01]">
+        <div>
+          <div className="hero-3d-card bg-gradient-to-r from-[#101A3A] via-[#1E40AF] to-[#2457C5] text-white rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center gap-6">
             <div className="relative flex-shrink-0">
               {heroOfMonth.imageUrl ? (
                 <img
@@ -216,7 +224,7 @@ export const OurHeroesPage: React.FC = () => {
             <div className="flex-1 text-center md:text-left space-y-2">
               <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-yellow-400/20 text-yellow-300 text-xs font-extrabold uppercase">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Featured Hero of the Month</span>
+                <span>{t('featuredHeroBadge', language, simpleWords)}</span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-black tracking-tight">{heroOfMonth.name}</h2>
               <div className="text-xs text-blue-200 font-semibold">
@@ -234,14 +242,18 @@ export const OurHeroesPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => toggleLikeHero(heroOfMonth.id)}
-                    className={`px-6 py-3.5 rounded-2xl font-extrabold text-xs sm:text-sm shadow-xl flex items-center gap-2.5 transition-all active:scale-95 ${
+                    aria-label={`Featured Salute ${heroOfMonth.name}`}
+                    className={`px-6 py-3.5 rounded-2xl font-extrabold text-xs sm:text-sm shadow-xl flex items-center gap-2.5 transition-all active:scale-95 cursor-pointer ${
                       isLiked
                         ? 'bg-red-500 text-white ring-4 ring-red-400/40 shadow-red-500/30'
                         : 'bg-white hover:bg-rose-50 text-slate-900 hover:text-red-600'
                     }`}
                   >
                     <Heart className={`w-5 h-5 ${isLiked ? 'fill-white text-white animate-pulse' : 'text-red-500'}`} />
-                    <span>{isLiked ? 'Saluted ❤️' : 'Send Salute'} ({heroOfMonth.thankCount})</span>
+                    <span>
+                      {isLiked ? t('salutedBtn', language, simpleWords) : t('sendSalute', language, simpleWords)} (
+                      {heroOfMonth.thankCount})
+                    </span>
                   </button>
                 );
               })()}
@@ -259,7 +271,7 @@ export const OurHeroesPage: React.FC = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search heroes by name, role, or squad..."
+            placeholder={t('searchHeroesPlaceholder', language, simpleWords)}
             className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#2457C5]"
           />
           {searchQuery && (
@@ -310,15 +322,16 @@ export const OurHeroesPage: React.FC = () => {
         </div>
       )}
 
-      {/* Grid of 3D Tilt Hero Cards with Per-User 1-Like Toggle */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 perspective-1000">
+      {/* Grid of Hero Cards with Per-Card Salute Toggle */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {filteredHeroes.map((hero) => {
           const isLiked = likedHeroIds.includes(hero.id);
 
           return (
             <div
               key={hero.id}
-              className={`hero-3d-card bg-white rounded-2xl p-5 border transition-all duration-300 transform hover:-translate-y-1 hover:rotate-x-2 hover:rotate-y-1 flex flex-col justify-between relative group ${
+              onClick={() => toggleLikeHero(hero.id)}
+              className={`hero-3d-card bg-white rounded-2xl p-5 border transition-all duration-200 flex flex-col justify-between relative group cursor-pointer ${
                 isLiked
                   ? 'border-red-300 bg-gradient-to-b from-white to-red-50/20 shadow-md'
                   : 'border-slate-200 shadow-xs hover:shadow-xl hover:border-[#2457C5]'
@@ -328,14 +341,22 @@ export const OurHeroesPage: React.FC = () => {
               {currentRole === 'admin' && (
                 <div className="absolute top-3 right-3 flex items-center gap-1 z-10">
                   <button
-                    onClick={() => handleOpenEditModal(hero)}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenEditModal(hero);
+                    }}
                     className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
                     title="Edit Hero"
                   >
                     <Edit className="w-3.5 h-3.5" />
                   </button>
                   <button
-                    onClick={() => deleteHero(hero.id)}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteHero(hero.id);
+                    }}
                     className="p-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
                     title="Delete Hero"
                   >
@@ -390,8 +411,12 @@ export const OurHeroesPage: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={() => toggleLikeHero(hero.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-xs ${
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleLikeHero(hero.id);
+                  }}
+                  aria-label={`Salute card for ${hero.name}`}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-xs cursor-pointer relative z-10 ${
                     isLiked
                       ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/30'
                       : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200'
@@ -399,7 +424,9 @@ export const OurHeroesPage: React.FC = () => {
                   title={isLiked ? 'Tap to remove salute' : 'Tap to send salute'}
                 >
                   <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-white text-white animate-pulse' : 'fill-rose-500 text-rose-600'}`} />
-                  <span>{isLiked ? 'Saluted ❤️' : 'Salute'}</span>
+                  <span>
+                    {isLiked ? t('salutedBtn', language, simpleWords) : t('saluteBtn', language, simpleWords)}
+                  </span>
                   <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${isLiked ? 'bg-red-700 text-white' : 'bg-rose-100 text-rose-800'}`}>
                     {hero.thankCount}
                   </span>

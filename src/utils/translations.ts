@@ -18,6 +18,11 @@ export const translations: TranslationDictionary = {
     te: 'ఎకోట్రయాజ్',
     hi: 'इकोट्रायाज',
   },
+  vizagBadge: {
+    en: 'Vizag',
+    te: 'వైజాగ్',
+    hi: 'विज़ाग',
+  },
   subtitle: {
     en: 'Emergency Hazard Intelligence',
     te: 'అత్యవసర ముప్పు సమాచార వ్యవస్థ',
@@ -27,6 +32,11 @@ export const translations: TranslationDictionary = {
     en: 'Keep Emergency Routes Moving. Even When Networks Go Dark.',
     te: 'నెట్‌వర్క్ ఆగిపోయినా అత్యవసర మార్గాలు ఆగకుండా చూడండి.',
     hi: 'नेटवर्क बंद होने पर भी आपातकालीन रास्ते चालू रखें।',
+  },
+  vizagResponseBadge: {
+    en: 'Visakhapatnam Emergency Response',
+    te: 'విశాఖపట్నం అత్యవసర స్పందన',
+    hi: 'विशाखापत्तनम आपातकालीन प्रतिक्रिया',
   },
   homeHeadline: {
     en: 'Help reaches blocked roads faster.',
@@ -42,12 +52,12 @@ export const translations: TranslationDictionary = {
   // Actions
   reportHazard: {
     en: 'Report Hazard',
-    te: 'ముప్పును నివేదించండి',
-    hi: 'खतरे की सूचना दें',
+    te: 'ముప్పు నివేదించండి',
+    hi: 'खतरा रिपोर्ट करें',
   },
   findHelpNearby: {
     en: 'Find Help Nearby',
-    te: 'సమీపంలోని సాయం కనుగొనండి',
+    te: 'సమీప సాయం కనుగొనండి',
     hi: 'नज़दीकी सहायता खोजें',
   },
   submitReport: {
@@ -65,20 +75,30 @@ export const translations: TranslationDictionary = {
     te: 'లైవ్ మ్యాప్‌లో చూడండి',
     hi: 'लाइव मैप पर देखें',
   },
+  reportNow: {
+    en: 'Report Now',
+    te: 'వెంటనే నివేదించండి',
+    hi: 'अभी रिपोर्ट करें',
+  },
 
-  // Navigation
+  // Navigation (Compact & Clear)
   home: { en: 'Home', te: 'హోమ్', hi: 'होम' },
   report: { en: 'Report', te: 'నివేదిక', hi: 'रिपोर्ट' },
   liveMap: { en: 'Live Map', te: 'లైవ్ మ్యాప్', hi: 'लाइव मैप' },
-  queue: { en: 'Queue', te: 'వరస క్రమం', hi: 'कतार' },
-  nearbyHelp: { en: 'Nearby Help', te: 'సమీప సాయం', hi: 'नज़दीकी सहायता' },
-  precautions: { en: 'Precautions', te: 'ముందస్తు జాగ్రత్తలు', hi: 'सावधानियां' },
-  cycloneHistory: { en: 'Cyclone History', te: 'తుఫాను చరిత్ర', hi: 'चक्रवात इतिहास' },
+  queue: { en: 'Queue', te: 'క్యూ', hi: 'कतार' },
+  nearbyHelp: { en: 'Nearby Help', te: 'సమీప సాయం', hi: 'सहायता केंद्र' },
+  emergencyContacts: { en: 'Contacts', te: 'అత్యవసర నంబర్లు', hi: 'आपातकालीन नंबर' },
+  emergencyContactsFull: { en: 'Emergency Contacts', te: 'అత్యవసర నంబర్లు', hi: 'आपातकालीन संपर्क' },
+  precautions: { en: 'Precautions', te: 'జాగ్రత్తలు', hi: 'सावधानियां' },
+  cycloneHistory: { en: 'History', te: 'తుఫాను చరిత్ర', hi: 'इतिहास' },
+  cycloneHistoryFull: { en: 'Cyclone History', te: 'తుఫాను చరిత్ర', hi: 'चक्रवात इतिहास' },
   ourHeroes: { en: 'Our Heroes', te: 'మన హీరోలు', hi: 'हमारे नायक' },
   alerts: { en: 'Alerts & Warnings', te: 'హెచ్చరికలు', hi: 'अलर्ट व चेतावनियां' },
+  alertsShort: { en: 'Alerts', te: 'హెచ్చరికలు', hi: 'अलर्ट' },
   dashboard: { en: 'Dashboard', te: 'డ్యాష్‌బోర్డ్', hi: 'डैशबोर्ड' },
   about: { en: 'About', te: 'మా గురించి', hi: 'परिचय' },
   more: { en: 'More', te: 'మరిన్ని', hi: 'अधिक' },
+  ops: { en: 'Ops', te: 'విధులు', hi: 'ऑप्स' },
 
   // Role screens
   myReports: { en: 'My Reports', te: 'నా నివేదికలు', hi: 'मेरी रिपोर्ट्स' },
@@ -102,6 +122,339 @@ export const translations: TranslationDictionary = {
     en: 'Priority sorted by AI',
     te: 'AI ద్వారా ప్రాధాన్యత వర్గీకరణ',
     hi: 'AI द्वारा प्राथमिकता तय',
+  },
+
+  // Home Quick Access Card
+  quickAccessTitle: {
+    en: 'Quick Access. Real Help.',
+    te: 'త్వరిత సేవలు. తక్షణ సాయం.',
+    hi: 'त्वरित पहुंच। वास्तविक मदद।',
+  },
+  directBadge: {
+    en: 'Direct',
+    te: 'నేరుగా',
+    hi: 'सीधा',
+  },
+  quickEmergencyContacts: {
+    en: 'Emergency Contacts (112, 108)',
+    te: 'అత్యవసర నంబర్లు (112, 108)',
+    hi: 'आपातकालीन संपर्क (112, 108)',
+  },
+  quickLiveMap: {
+    en: 'Live Operational Map',
+    te: 'లైవ్ ఆపరేషనల్ మ్యాప్',
+    hi: 'लाइव ऑपरेशनल मैप',
+  },
+  quickReliefCamps: {
+    en: 'Relief Camps & Free Beds',
+    te: 'పునరావాస శిబిరాలు & పడకలు',
+    hi: 'राहत शिविर और खाली बेड',
+  },
+  quickAlerts: {
+    en: 'Alerts & Warnings',
+    te: 'హెచ్చరికలు & సూచనలు',
+    hi: 'अलर्ट और चेतावनियां',
+  },
+  quickStaffSignIn: {
+    en: 'Staff Sign In / Roles',
+    te: 'సిబ్బంది లాగిన్ / పాత్రలు',
+    hi: 'अधिकारी लॉगिन / भूमिकाएं',
+  },
+
+  // Home 4 Overlapping Service Cards
+  cardReliefTitle: {
+    en: 'Nearby Relief Camps',
+    te: 'సమీప పునరావాస శిబిరాలు',
+    hi: 'नज़दीकी राहत शिविर',
+  },
+  cardReliefDesc: {
+    en: 'Find safe shelters & free bed capacities near you',
+    te: 'మీ దగ్గరలోని సురక్షిత షెల్టర్లు & ఖాళీ పడకల వివరాలు',
+    hi: 'अपने पास सुरक्षित आश्रय और खाली बेड की जानकारी पाएं',
+  },
+  cardReliefAction: {
+    en: 'Check Capacity',
+    te: 'పడకల వివరాలు చూడండి',
+    hi: 'क्षमता जांचें',
+  },
+  cardMedicalTitle: {
+    en: 'Medical Help',
+    te: 'వైద్య సహాయం',
+    hi: 'चिकित्सा सहायता',
+  },
+  cardMedicalDesc: {
+    en: 'Emergency hospital trauma bays & ambulance lines',
+    te: 'అత్యవసర ఆసుపత్రులు & అంబులెన్స్ సేవలు',
+    hi: 'आपातकालीन अस्पताल ट्रॉमा सेंटर और एम्बुलेंस सेवाएं',
+  },
+  cardMedicalAction: {
+    en: 'Get Assistance',
+    te: 'సహాయం పొందండి',
+    hi: 'सहायता प्राप्त करें',
+  },
+  cardPrecautionsTitle: {
+    en: 'Safety Precautions',
+    te: 'భద్రతా జాగ్రత్తలు',
+    hi: 'सुरक्षा सावधानियां',
+  },
+  cardPrecautionsDesc: {
+    en: 'Before, during, and after storm safety guidelines',
+    te: 'తుఫానుకు ముందు, సమయంలో మరియు తర్వాత తీసుకోవాల్సిన జాగ్రత్తలు',
+    hi: 'तूफ़ान से पहले, दौरान और बाद के सुरक्षा दिशानिर्देश',
+  },
+  cardPrecautionsAction: {
+    en: 'Stay Prepared',
+    te: 'సిద్ధంగా ఉండండి',
+    hi: 'तैयार रहें',
+  },
+  cardHeroesTitle: {
+    en: 'Our Heroes',
+    te: 'మన హీరోలు',
+    hi: 'हमारे नायक',
+  },
+  cardHeroesDesc: {
+    en: 'Salute the frontline municipal & electrical workers',
+    te: 'మున్సిపల్, విద్యుత్ మరియు రెస్క్యూ సిబ్బందికి సెల్యూట్ చేయండి',
+    hi: 'फ्रंटलाइन नगर निगम और बिजली कर्मियों को सलाम करें',
+  },
+  cardHeroesAction: {
+    en: 'Send a Salute',
+    te: 'సెల్యూట్ పంపండి',
+    hi: 'सलाम भेजें',
+  },
+
+  // Home 4 Live Stats
+  statTotalReports: {
+    en: 'Total Reports',
+    te: 'మొత్తం నివేదికలు',
+    hi: 'कुल रिपोर्ट्स',
+  },
+  statSampleActive: {
+    en: 'Sample records active',
+    te: 'నమూనా రికార్డులు అందుబాటులో ఉన్నాయి',
+    hi: 'सैंपल रिकॉर्ड सक्रिय',
+  },
+  statCriticalHazards: {
+    en: 'Critical Hazards',
+    te: 'తీవ్రమైన ప్రమాదాలు',
+    hi: 'गंभीर खतरे',
+  },
+  statCriticalSub: {
+    en: 'Live wire & lifeline blocks',
+    te: 'కరెంట్ తీగలు & ప్రధాన రోడ్ల బ్లాక్‌లు',
+    hi: 'बिजली के तार और मुख्य मार्ग अवरोध',
+  },
+  statResponseCrews: {
+    en: 'Response Crews',
+    te: 'స్పందన బృందాలు',
+    hi: 'राहत दस्ते',
+  },
+  statCrewsSub: {
+    en: 'PWD, Electricity & Rescue',
+    te: 'PWD, విద్యుత్ & రెస్క్యూ సిబ్బంది',
+    hi: 'PWD, बिजली और बचाव दल',
+  },
+  statHazardsCleared: {
+    en: 'Hazards Cleared',
+    te: 'తొలగించిన అడ్డంకులు',
+    hi: 'हटाए गए खतरे',
+  },
+  statClearedSub: {
+    en: 'Roads reopened safely',
+    te: 'సురక్షితంగా తెరవబడిన రోడ్లు',
+    hi: 'सुरक्षित रूप से खोली गई सड़कें',
+  },
+
+  // Home Emergency Strip
+  emergencyStripHeading: {
+    en: 'Live wire or fully blocked road?',
+    te: 'విద్యుత్ తీగ పడిందా లేదా రోడ్డు పూర్తిగా మూసుకుపోయిందా?',
+    hi: 'बिजली का तार गिरा है या सड़क पूरी तरह बंद है?',
+  },
+  emergencyStripBody: {
+    en: 'Report it first. It gets the highest automated priority in the municipal command queue.',
+    te: 'వెంటనే నివేదించండి. మున్సిపల్ కమాండ్ క్యూలో దీనికి అత్యధిక ప్రాధాన్యత లభిస్తుంది.',
+    hi: 'तुरंत रिपोर्ट करें। नगर निगम कमांड कतार में इसे सर्वोच्च प्राथमिकता मिलती है।',
+  },
+
+  // Home Priority Open Incidents
+  priorityIncidentsTitle: {
+    en: 'Priority Open Incidents',
+    te: 'ముఖ్యమైన పెండింగ్ ఘటనలు',
+    hi: 'प्राथमिकता वाली खुली घटनाएं',
+  },
+  priorityIncidentsSub: {
+    en: 'Ranked in real time by the EcoTriage priority model',
+    te: 'ఎకోట్రయాజ్ ప్రాధాన్యత మోడల్ ద్వారా నిజ సమయంలో ర్యాంక్ చేయబడినవి',
+    hi: 'इकोट्रायाज प्राथमिकता मॉडल द्वारा रियल-टाइम में क्रमबद्ध',
+  },
+  viewFullQueue: {
+    en: 'View full queue',
+    te: 'పూర్తి క్యూ చూడండి',
+    hi: 'पूरी कतार देखें',
+  },
+  liveCorridorMap: {
+    en: 'Live Corridor Map (OSM)',
+    te: 'లైవ్ కారిడార్ మ్యాప్ (OSM)',
+    hi: 'लाइव कॉरिडोर मैप (OSM)',
+  },
+  fullMap: {
+    en: 'Full Map',
+    te: 'పూర్తి మ్యాప్',
+    hi: 'पूरा मैप',
+  },
+  mapClickHint: {
+    en: 'Click any hazard pin on the map to inspect live priority and details.',
+    te: 'వివరాలు మరియు ప్రాధాన్యత చూడటానికి మ్యాప్‌లోని ఏదైనా పిన్‌పై క్లిక్ చేయండి.',
+    hi: 'लाइव प्राथमिकता और विवरण देखने के लिए मैप पर किसी भी पिन पर क्लिक करें।',
+  },
+  scoreLabel: {
+    en: 'Score',
+    te: 'స్కోరు',
+    hi: 'स्कोर',
+  },
+
+  // Home How It Works
+  workflowBadge: {
+    en: 'Operational Workflow',
+    te: 'కార్యనిర్వహణ విధానం',
+    hi: 'कार्यप्रणाली',
+  },
+  howItWorksTitle: {
+    en: 'How EcoTriage Works',
+    te: 'ఎకోట్రయాజ్ ఎలా పనిచేస్తుంది',
+    hi: 'इकोट्रायाज कैसे काम करता है',
+  },
+  howItWorksSub: {
+    en: 'Accelerating road clearance by combining mobile field reporting, AI image inspection, and priority dispatch.',
+    te: 'మొబైల్ రిపోర్టింగ్, AI ఫోటో విశ్లేషణ మరియు వేగవంతమైన సిబ్బంది కేటాయింపుతో రోడ్ల పునరుద్ధరణ.',
+    hi: 'मोबाइल रिपोर्टिंग, AI फोटो जांच और त्वरित दल तैनाती के साथ सड़कें साफ़ करने की तेज़ प्रक्रिया।',
+  },
+  step1Title: {
+    en: 'Take a photo',
+    te: 'ఫోటో తీయండి',
+    hi: 'फ़ोटो लें',
+  },
+  step1Desc: {
+    en: 'Field squad captures obstruction on-site. GPS coordinates are automatically tagged, even with zero network.',
+    te: 'సిబ్బంది లేదా ప్రజలు అడ్డంకి ఫోటో తీస్తారు. నెట్‌వర్క్ లేకపోయినా GPS లొకేషన్ ఆటోమేటిక్‌గా జతచేయబడుతుంది.',
+    hi: 'फील्ड टीम मौके पर बाधा की फोटो लेती है। नेटवर्क न होने पर भी GPS लोकेशन अपने-आप जुड़ जाती है।',
+  },
+  step2Title: {
+    en: 'AI scores hazard',
+    te: 'AI ప్రమాదాన్ని అంచనా వేస్తుంది',
+    hi: 'AI खतरे का स्कोर तय करता है',
+  },
+  step2Desc: {
+    en: 'Gemini model reads tree blockage, detects live electrical wires, cross-checks hospital routes, and assigns 0-10 priority.',
+    te: 'AI మోడల్ పడిపోయిన చెట్లు, కరెంట్ తీగలు మరియు ఆసుపత్రి మార్గాలను గుర్తించి 0-10 ప్రాధాన్యత స్కోరు ఇస్తుంది.',
+    hi: 'AI मॉडल गिरे पेड़, बिजली के तार और अस्पताल मार्गों की जांच कर 0-10 प्राथमिकता स्कोर देता है।',
+  },
+  step3Title: {
+    en: 'Crew is sent',
+    te: 'సిబ్బందిని పంపుతారు',
+    hi: 'राहत दस्ता भेजा जाता है',
+  },
+  step3Desc: {
+    en: 'Command assigns heavy bulldozers or wire isolators instantly. Critical lifelines open hours ahead of standard schedules.',
+    te: 'కమాండ్ సెంటర్ వెంటనే భారీ యంత్రాలు లేదా విద్యుత్ సిబ్బందిని పంపుతుంది. ముఖ్యమైన రోడ్లు గంటల ముందే తెరుచుకుంటాయి.',
+    hi: 'कमांड सेंटर तुरंत बुलडोज़र या बिजली टीम भेजता है। महत्वपूर्ण रास्ते तय समय से घंटों पहले खुल जाते हैं।',
+  },
+
+  // Home Why It Matters
+  whyMattersBadge: {
+    en: 'Verified Impact Research',
+    te: 'పరిశోధన గణాంకాలు',
+    hi: 'सत्यापित प्रभाव अनुसंधान',
+  },
+  whyMattersTitle: {
+    en: 'Why Micro-Triage Matters',
+    te: 'మైక్రో-ట్రయాజ్ ఎందుకు ముఖ్యం',
+    hi: 'माइक्रो-ट्रायाज क्यों ज़रूरी है',
+  },
+
+  // Our Heroes Page
+  heroesBadge: {
+    en: 'Coastal Frontline Responders',
+    te: 'తీరప్రాంత ఫ్రంట్‌లైన్ యోధులు',
+    hi: 'तटीय फ्रंटलाइन रक्षक',
+  },
+  heroesTitle: {
+    en: 'Our Heroes (Disaster Responders)',
+    te: 'మన హీరోలు (విపత్తు స్పందన సిబ్బంది)',
+    hi: 'हमारे नायक (आपदा राहत कर्मी)',
+  },
+  heroesSub: {
+    en: 'Every frontline worker, municipal worker, electrician, and volunteer risks their safety to clear roads and save lives. Tap any card below to send a salute!',
+    te: 'ప్రతి మున్సిపల్ కార్మికుడు, ఎలక్ట్రీషియన్ మరియు వాలంటీర్ తమ ప్రాణాలను పణంగా పెట్టి రోడ్లను క్లియర్ చేస్తున్నారు. సెల్యూట్ పంపడానికి ఏదైనా కార్డుపై నొక్కండి!',
+    hi: 'हर नगर निगम कर्मी, इलेक्ट्रीशियन और स्वयंसेवक अपनी जान जोखिम में डालकर सड़कें साफ़ करते हैं। सलाम भेजने के लिए किसी भी कार्ड पर टैप करें!',
+  },
+  respondersCount: {
+    en: 'Responders',
+    te: 'సిబ్బంది',
+    hi: 'रक्षक',
+  },
+  totalSalutes: {
+    en: 'Total Salutes',
+    te: 'మొత్తం సెల్యూట్‌లు',
+    hi: 'कुल सलाम',
+  },
+  addHeroBtn: {
+    en: 'Add Family / Responder Hero',
+    te: 'హీరో పేరును చేర్చండి',
+    hi: 'नायक प्रोफ़ाइल जोड़ें',
+  },
+  featuredHeroBadge: {
+    en: 'Featured Hero of the Month',
+    te: 'ఈ నెల ఆదర్శ హీరో',
+    hi: 'इस महीने के प्रमुख नायक',
+  },
+  sendSalute: {
+    en: 'Send Salute',
+    te: 'సెల్యూట్ పంపండి',
+    hi: 'सलाम भेजें',
+  },
+  saluteBtn: {
+    en: 'Salute',
+    te: 'సెల్యూట్',
+    hi: 'सलाम',
+  },
+  salutedBtn: {
+    en: 'Saluted ❤️',
+    te: 'సెల్యూట్ చేశారు ❤️',
+    hi: 'सलाम किया ❤️',
+  },
+  searchHeroesPlaceholder: {
+    en: 'Search heroes by name, role, or squad...',
+    te: 'పేరు, విభాగం లేదా హోదా ద్వారా హీరోలను వెతకండి...',
+    hi: 'नाम, भूमिका या विभाग से नायकों को खोजें...',
+  },
+
+  // Emergency Contacts Page
+  contactsBadge: {
+    en: 'Standard National Lifelines',
+    te: 'జాతీయ అత్యవసర హెల్ప్‌లైన్లు',
+    hi: 'राष्ट्रीय आपातकालीन हेल्पलाइन',
+  },
+  contactsTitle: {
+    en: 'Emergency Contacts Directory',
+    te: 'అత్యవసర ఫోన్ నంబర్ల జాబితా',
+    hi: 'आपातकालीन संपर्क निर्देशिका',
+  },
+  contactsSub: {
+    en: 'Verified control rooms, medical trauma centers, and disaster response units for Visakhapatnam.',
+    te: 'విశాఖపట్నం కంట్రోల్ రూమ్‌లు, ఆసుపత్రులు మరియు విపత్తు సహాయక విభాగాల ఫోన్ నంబర్లు.',
+    hi: 'विशाखापत्तनम के सत्यापित कंट्रोल रूम, अस्पताल और आपदा राहत केंद्रों के नंबर।',
+  },
+  joinVolunteerBtn: {
+    en: 'Join as Volunteer',
+    te: 'వాలంటీర్‌గా చేరండి',
+    hi: 'स्वयंसेवक बनें',
+  },
+  suggestContactBtn: {
+    en: 'Suggest Contact',
+    te: 'నంబర్ సూచించండి',
+    hi: 'संपर्क सुझाएं',
   },
 
   // Obstruction terms (with simple words mode)
@@ -221,7 +574,30 @@ export const translations: TranslationDictionary = {
   commandRole: { en: 'Command Officer', te: 'కమాండ్ ఆఫీసర్', hi: 'कमांड ऑफ़िसर' },
   adminRole: { en: 'System Admin', te: 'సిస్టమ్ అడ్మిన్', hi: 'सिस्टम एडमिन' },
   staffSignIn: { en: 'Staff sign in', te: 'సిబ్బంది లాగిన్', hi: 'कर्मचारी लॉगिन' },
+  officerLoginShort: { en: 'Officer', te: 'ఆఫీసర్', hi: 'अधिकारी' },
   signOut: { en: 'Switch / Sign out', te: 'సైన్ అవుట్', hi: 'साइन आउट' },
+
+  // Mode Banners
+  emergencyModeActive: {
+    en: 'EMERGENCY MODE ACTIVE',
+    te: 'అత్యవసర మోడ్ ఆన్‌లో ఉంది',
+    hi: 'आपातकालीन मोड सक्रिय',
+  },
+  dailyModeOfficer: {
+    en: 'Officer Daily Mode (Normal)',
+    te: 'ఆఫీసర్ డైలీ మోడ్ (సాధారణం)',
+    hi: 'अधिकारी दैनिक मोड (सामान्य)',
+  },
+  disasterEmergencyAlert: {
+    en: 'DISASTER EMERGENCY:',
+    te: 'విపత్తు అత్యవసర హెచ్చరిక:',
+    hi: 'आपदा आपातकालीन चेतावनी:',
+  },
+  emergencyBroadcastSub: {
+    en: 'All response squads active. Emergency reporting priority engaged.',
+    te: 'అన్ని సహాయక బృందాలు రంగంలో ఉన్నాయి. అత్యవసర నివేదికలకు మొదటి ప్రాధాన్యత.',
+    hi: 'सभी राहत दस्ते सक्रिय हैं। आपातकालीन रिपोर्टिंग को सर्वोच्च प्राथमिकता।',
+  },
 
   // Simple words toggle
   simpleWordsMode: {

@@ -5,7 +5,7 @@ import { SAMPLE_USERS } from '../utils/storage.ts';
 import { Eye, HardHat, Radio, ShieldCheck, X, KeyRound, AlertCircle } from 'lucide-react';
 
 export const RoleAuthModal: React.FC = () => {
-  const { isAuthModalOpen, setIsAuthModalOpen, signIn, setActivePage } = useApp();
+  const { isAuthModalOpen, setIsAuthModalOpen, signIn, signOut, currentRole, setActivePage } = useApp();
   const [selectedRole, setSelectedRole] = useState<UserRole>('command');
   const [userName, setUserName] = useState<string>('Ravi (Command)');
   const [pin, setPin] = useState<string>('1234');
@@ -180,20 +180,33 @@ export const RoleAuthModal: React.FC = () => {
           )}
 
           <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                setIsAuthModalOpen(false);
-                setActivePage('report');
-              }}
-              className="text-xs text-[#2457C5] font-semibold hover:underline"
-            >
-              Report without signing in (Unverified demo)
-            </button>
+            {currentRole !== 'public' ? (
+              <button
+                type="button"
+                onClick={() => {
+                  signOut();
+                  setIsAuthModalOpen(false);
+                }}
+                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded-xl text-xs transition-all cursor-pointer"
+              >
+                Sign Out to Public Citizen Mode
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAuthModalOpen(false);
+                  setActivePage('report');
+                }}
+                className="text-xs text-[#2457C5] font-semibold hover:underline"
+              >
+                Report without signing in (Unverified demo)
+              </button>
+            )}
 
             <button
               type="submit"
-              className="w-full sm:w-auto px-6 py-2.5 bg-[#2457C5] hover:bg-blue-700 text-white font-bold rounded-xl text-sm shadow-md transition-all active:scale-95"
+              className="w-full sm:w-auto px-6 py-2.5 bg-[#2457C5] hover:bg-blue-700 text-white font-bold rounded-xl text-sm shadow-md transition-all active:scale-95 cursor-pointer"
             >
               Sign In as {selectedRole.toUpperCase()}
             </button>

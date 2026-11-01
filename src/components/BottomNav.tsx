@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext.tsx';
+import { t } from '../utils/translations.ts';
 import {
   AlertTriangle,
   Home,
@@ -15,19 +16,18 @@ import {
   Info,
   LogOut,
   Sparkles,
+  Phone,
 } from 'lucide-react';
 
 export const BottomNav: React.FC = () => {
-  const { activePage, setActivePage, alerts, currentUser, currentRole, setIsAuthModalOpen, signOut, simpleWords, setSimpleWords } = useApp();
+  const { activePage, setActivePage, currentUser, currentRole, setIsAuthModalOpen, signOut, simpleWords, setSimpleWords, language } = useApp();
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
-  const topAlert = alerts.find((a) => a.active);
-
   const navItems = [
-    { id: 'home', label: 'Home', icon: Home },
-    { id: 'map', label: 'Map', icon: Map },
-    { id: 'help', label: 'Help', icon: LifeBuoy },
-    { id: 'alerts', label: 'Alerts', icon: Bell },
+    { id: 'home', label: t('home', language, simpleWords), icon: Home },
+    { id: 'map', label: t('liveMap', language, simpleWords), icon: Map },
+    { id: 'help', label: t('nearbyHelp', language, simpleWords), icon: LifeBuoy },
+    { id: 'alerts', label: t('alertsShort', language, simpleWords), icon: Bell },
   ];
 
   return (
@@ -40,7 +40,7 @@ export const BottomNav: React.FC = () => {
           aria-label="Report Hazard immediately"
         >
           <AlertTriangle className="w-5 h-5" />
-          <span>Report Hazard</span>
+          <span>{t('reportHazard', language, simpleWords)}</span>
         </button>
       </div>
 
@@ -77,7 +77,7 @@ export const BottomNav: React.FC = () => {
           }`}
         >
           <MoreHorizontal className="w-5 h-5 mb-0.5" />
-          <span className="text-[11px] leading-tight">More</span>
+          <span className="text-[11px] leading-tight">{t('more', language, simpleWords)}</span>
         </button>
       </nav>
 
@@ -104,7 +104,7 @@ export const BottomNav: React.FC = () => {
               <div>
                 <span className="text-xs text-slate-500 block">Signed in as</span>
                 <span className="font-bold text-slate-800">
-                  {currentUser ? currentUser.name : 'Public Citizen'}
+                  {currentUser ? currentUser.name : t('publicRole', language, simpleWords)}
                 </span>
                 <span className="ml-2 text-[10px] uppercase font-bold text-[#2457C5] bg-blue-100 px-1.5 py-0.5 rounded">
                   {currentRole}
@@ -119,7 +119,7 @@ export const BottomNav: React.FC = () => {
                   className="text-xs text-red-600 font-bold px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50 flex items-center gap-1"
                 >
                   <LogOut className="w-3.5 h-3.5" />
-                  <span>Sign out</span>
+                  <span>{t('signOut', language, simpleWords)}</span>
                 </button>
               ) : (
                 <button
@@ -129,7 +129,7 @@ export const BottomNav: React.FC = () => {
                   }}
                   className="text-xs text-[#2457C5] font-bold px-3 py-1.5 rounded-lg border border-blue-200 bg-white hover:bg-blue-50"
                 >
-                  Staff sign in
+                  {t('staffSignIn', language, simpleWords)}
                 </button>
               )}
             </div>
@@ -144,7 +144,18 @@ export const BottomNav: React.FC = () => {
                 className="p-3 text-left rounded-xl bg-red-50 text-red-700 border border-red-200 flex items-center gap-2 font-bold"
               >
                 <AlertTriangle className="w-4 h-4 text-red-600" />
-                <span>Report Hazard</span>
+                <span>{t('reportHazard', language, simpleWords)}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActivePage('contacts');
+                  setIsMoreMenuOpen(false);
+                }}
+                className="p-3 text-left rounded-xl hover:bg-slate-50 border border-slate-200 flex items-center gap-2"
+              >
+                <Phone className="w-4 h-4 text-red-600" />
+                <span>{t('emergencyContactsFull', language, simpleWords)}</span>
               </button>
 
               <button
@@ -155,7 +166,7 @@ export const BottomNav: React.FC = () => {
                 className="p-3 text-left rounded-xl hover:bg-slate-50 border border-slate-200 flex items-center gap-2"
               >
                 <FileText className="w-4 h-4 text-blue-600" />
-                <span>Queue</span>
+                <span>{t('queue', language, simpleWords)}</span>
               </button>
 
               <button
@@ -166,7 +177,7 @@ export const BottomNav: React.FC = () => {
                 className="p-3 text-left rounded-xl hover:bg-slate-50 border border-slate-200 flex items-center gap-2"
               >
                 <Shield className="w-4 h-4 text-amber-600" />
-                <span>Precautions</span>
+                <span>{t('precautions', language, simpleWords)}</span>
               </button>
 
               <button
@@ -177,7 +188,7 @@ export const BottomNav: React.FC = () => {
                 className="p-3 text-left rounded-xl hover:bg-slate-50 border border-slate-200 flex items-center gap-2"
               >
                 <Clock className="w-4 h-4 text-slate-600" />
-                <span>Cyclone History</span>
+                <span>{t('cycloneHistoryFull', language, simpleWords)}</span>
               </button>
 
               <button
@@ -188,7 +199,7 @@ export const BottomNav: React.FC = () => {
                 className="p-3 text-left rounded-xl hover:bg-slate-50 border border-slate-200 flex items-center gap-2"
               >
                 <Heart className="w-4 h-4 text-pink-600" />
-                <span>Our Heroes</span>
+                <span>{t('ourHeroes', language, simpleWords)}</span>
               </button>
 
               <button
@@ -199,7 +210,7 @@ export const BottomNav: React.FC = () => {
                 className="p-3 text-left rounded-xl hover:bg-slate-50 border border-slate-200 flex items-center gap-2"
               >
                 <Info className="w-4 h-4 text-slate-600" />
-                <span>About EcoTriage</span>
+                <span>{t('about', language, simpleWords)}</span>
               </button>
 
               {/* Staff specific items */}

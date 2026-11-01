@@ -1,9 +1,19 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext.tsx';
+import { t } from '../utils/translations.ts';
 import { Pause, Play, Wifi, WifiOff } from 'lucide-react';
 
 export const Ticker: React.FC = () => {
-  const { alerts, networkStatus, setNetworkStatus, setActivePage, setSelectedIncidentId, incidents } = useApp();
+  const {
+    alerts,
+    networkStatus,
+    setNetworkStatus,
+    setActivePage,
+    setSelectedIncidentId,
+    incidents,
+    language,
+    simpleWords,
+  } = useApp();
   const [isPaused, setIsPaused] = useState<boolean>(false);
 
   const activeAlerts = alerts.filter((a) => a.active);
@@ -12,7 +22,7 @@ export const Ticker: React.FC = () => {
   const recentUpdates = incidents.slice(0, 3).map((inc) => ({
     id: inc.id,
     severity: inc.severity,
-    text: `${inc.location}: ${inc.obstruction === 'complete_block' ? 'Road blocked' : 'Single lane'} (${inc.status})`,
+    text: `${inc.location}: ${t(inc.obstruction, language, simpleWords)} (${t(inc.status, language, simpleWords)})`,
     time: inc.createdAt,
     isIncident: true,
   }));
@@ -53,23 +63,31 @@ export const Ticker: React.FC = () => {
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
         >
-          {activeAlerts.map((a) => (
-            <button
-              key={a.id}
-              onClick={() => setActivePage('alerts')}
-              className="inline-flex items-center gap-2 hover:text-[#90b8ff] transition-colors focus:outline-none focus:underline"
-            >
-              <span
-                className={`inline-block w-2 h-2 rounded-full ${
-                  a.severity === 'Warning' ? 'bg-[#D32F2F]' : 'bg-[#F2A900]'
-                }`}
-              />
-              <span className="font-semibold text-white/90">
-                {a.type.toUpperCase()}: {a.message}
-              </span>
-              <span className="text-white/50 text-[11px]">• {a.issuedAt.split('•')[1] || 'Recent'}</span>
-            </button>
-          ))}
+          {activeAlerts.map((a) => {
+            const localizedMsg =
+              language === 'te' && a.messageTe
+                ? a.messageTe
+                : language === 'hi' && a.messageHi
+                ? a.messageHi
+                : a.message;
+            return (
+              <button
+                key={a.id}
+                onClick={() => setActivePage('alerts')}
+                className="inline-flex items-center gap-2 hover:text-[#90b8ff] transition-colors focus:outline-none focus:underline"
+              >
+                <span
+                  className={`inline-block w-2 h-2 rounded-full ${
+                    a.severity === 'Warning' ? 'bg-[#D32F2F]' : 'bg-[#F2A900]'
+                  }`}
+                />
+                <span className="font-semibold text-white/90">
+                  {a.type.toUpperCase()}: {localizedMsg}
+                </span>
+                <span className="text-white/50 text-[11px]">• {a.issuedAt.split('•')[1] || 'Recent'}</span>
+              </button>
+            );
+          })}
 
           {recentUpdates.map((u) => (
             <button

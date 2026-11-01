@@ -27,7 +27,7 @@ import {
   saveHeroes,
   saveIncidents,
 } from '../utils/storage.ts';
-import { calculateRuleScore, getSeverity } from '../utils/rules.ts';
+import { calculateRuleScore, getSeverity, toggleHeroSaluteState } from '../utils/rules.ts';
 import { OperatingMode, EmergencyContact, VolunteerRegistration, SAMPLE_EMERGENCY_CONTACTS } from '../utils/modeConfig.ts';
 
 interface AppContextType {
@@ -656,37 +656,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [likedHeroIds, setLikedHeroIds] = useState<string[]>(() => {
     try {
       const raw = localStorage.getItem('ecotriage_liked_heroes');
-      return raw ? JSON.parse(raw) : [];
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
       return [];
     }
   });
 
   const toggleLikeHero = (heroId: string) => {
-    let heroName = 'Hero';
-    const isAlreadyLiked = likedHeroIds.includes(heroId);
-    const nextLiked = isAlreadyLiked
-      ? likedHeroIds.filter((id) => id !== heroId)
-      : [...likedHeroIds, heroId];
+    if (!heroId) return;
+    const { updatedHeroes, updatedLikedIds, isNowLiked, heroName } = toggleHeroSaluteState(
+      heroes,
+      likedHeroIds,
+      heroId
+    );
 
-    setLikedHeroIds(nextLiked);
+    setLikedHeroIds(updatedLikedIds);
     try {
-      localStorage.setItem('ecotriage_liked_heroes', JSON.stringify(nextLiked));
+      localStorage.setItem('ecotriage_liked_heroes', JSON.stringify(updatedLikedIds));
     } catch {}
 
-    const updated = heroes.map((h) => {
-      if (h.id === heroId) {
-        heroName = h.name;
-        const newCount = isAlreadyLiked ? Math.max(0, h.thankCount - 1) : h.thankCount + 1;
-        return { ...h, thankCount: newCount };
-      }
-      return h;
-    });
+    setHeroes(updatedHeroes);
+    saveHeroes(updatedHeroes);
 
-    setHeroes(updated);
-    saveHeroes(updated);
-
-    if (isAlreadyLiked) {
+    if (!isNowLiked) {
       showToast(`Removed salute for ${heroName}`);
     } else {
       showToast(`Salute sent to ${heroName}! ❤️`);

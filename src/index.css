@@ -19,19 +19,18 @@
   }
 }
 
-/* Custom 3D Card Animation Utilities */
+/* Card Elevation Utilities */
 .perspective-1000 {
-  perspective: 1000px;
+  position: relative;
 }
 
 .hero-3d-card {
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  transform-style: preserve-3d;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .hero-3d-card:hover {
-  transform: translateY(-8px) rotateX(4deg) rotateY(-3deg) scale(1.02);
-  box-shadow: 0 20px 30px -10px rgba(36, 87, 197, 0.2), 0 10px 15px -5px rgba(0, 0, 0, 0.05);
+  transform: translateY(-4px);
+  box-shadow: 0 20px 30px -10px rgba(36, 87, 197, 0.18), 0 10px 15px -5px rgba(0, 0, 0, 0.05);
 }
 
 /* Custom animations */
