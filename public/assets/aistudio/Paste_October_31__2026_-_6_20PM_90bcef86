@@ -1,0 +1,394 @@
+=====================================================================
+MASTER BUILD PROMPT: "ECOTRIAGE"
+A multi-page, role-based, offline-first emergency hazard and public-help web platform for Visakhapatnam, India
+=====================================================================
+
+HOW TO READ THIS PROMPT
+You are a senior product designer and full-stack engineer. Build the complete application described below. Everything you need is in this document: purpose, users, design system, every page, every button, every rule, the AI feature, the data and the build order. Where something is not specified, choose the simplest option that suits an emergency situation, and mention your choice in the plan. Do not skip a page or feature. Do not add features that are not listed. Every button must work. Show a short plan first, then build.
+
+---------------------------------------------------------------------
+SECTION 1. PRODUCT OVERVIEW
+---------------------------------------------------------------------
+Name: EcoTriage
+Tagline: "Keep Emergency Routes Moving. Even When Networks Go Dark."
+Home headline: "Help reaches blocked roads faster."
+Home sub-line: "Report hazards. Find help. Stay safe."
+Subtitle under the logo: "Emergency Hazard Intelligence"
+City: Visakhapatnam, Andhra Pradesh, India. Team: Webuzz.
+
+The problem: after cyclones, municipal authorities lose critical hours finding and ranking blocked roads, because reports arrive through scattered phone calls and messaging apps. Blocked roads delay rescue, medical transport and power restoration.
+
+The solution: a web platform with two sides.
+(a) Operations side: field officers and clearance squads report blockages with a photo and GPS. An AI model reads the photo and gives a priority score. Command officers see a live, colour-coded, priority-ranked map and queue, dispatch crews, and track progress.
+(b) Public-help side: anyone can find nearby relief camps, hospitals and support services, read safety precautions, read about past cyclones, and see the people who helped (Our Heroes).
+The platform keeps working when the network is down: reports are saved on the device and sent when the network returns.
+
+Browser only. No native Android or iOS app. It must work well on a 360px phone browser and on a 1440px laptop browser.
+
+Do NOT build: drone integration, native app-store apps, payment or billing, pre-storm tree-health tracking.
+Do NOT use any government emblem, national flag graphic, real government agency logo, or real corporation name (use generic names such as "Municipal Clearance Unit" and "State Electricity Board (sample)"). Label every piece of demo content "Sample".
+
+THE ONE MAIN ACTION
+"Report Hazard": take or upload a photo, the app tags GPS, the AI scores the hazard, and it appears on the live map and in the queue. This is a solid red button, always visible (in the header on desktop, as a floating button and in the bottom bar on mobile). A hazard can be reported in 2 taps or fewer from any page.
+
+---------------------------------------------------------------------
+SECTION 2. USERS AND ROLES
+---------------------------------------------------------------------
+Five access levels:
+1. Public (no sign-in): residents and visitors. Read-only help information.
+2. Viewer: observers or senior officials. Can see the live map, queue and dashboard. Cannot change anything.
+3. Field Officer (includes clearance squad members): reports hazards, sees own reports and assignments, updates progress on assigned hazards.
+4. Command Officer: verifies reports, dispatches crews, changes status, overrides priority (with a reason), manages alerts, relief camp status and hero-story approvals, exports data.
+5. Admin: everything above plus users, crews, zones, help points, page content, activity log and data reset.
+
+Sign-in (simulated for the demo):
+- A "Who are you?" screen shows 4 large role cards (Viewer, Field Officer, Command Officer, Admin), each with an icon, a name and a one-line description. One tap selects a role, then the person enters a name and a 4-digit PIN.
+- Public visitors never see this screen. A small "Staff sign in" link in the header opens it.
+- Field Officers also get a "Report without signing in" option for emergencies. Those reports are labelled "Unverified" and appear in the Command Officer's "Verify Reports" list.
+- The signed-in user is remembered in localStorage. The header shows the name and a role badge, with a "Switch user / Sign out" button.
+- Preload 4 Sample users (one per staff role), for example "Ravi (Command)", "Lakshmi (Field)", "Admin Sample", "Viewer Sample". PINs are shown on the sign-in screen in demo mode.
+- A visible note on the About page and the sign-in screen: "Demo sign-in. The real version will use secure login (OTP or municipal ID). Role limits in this demo are not real security."
+
+Menu by role (show only what the role can use, hide the rest):
+- Public: Home, Nearby Help, Precautions, Cyclone History, Our Heroes, Alerts, About, Emergency 112.
+- Viewer: Public pages + Live Map, Queue, Dashboard (read-only).
+- Field Officer: Viewer pages + Report, My Reports, My Assignments.
+- Command Officer: Field pages + Verify Reports, Dispatch (inside the drawer), Resources, Alerts Manager, Export.
+- Admin: everything + Users, Crews, Zones, Content Manager, Activity Log, Settings, Clear Data.
+
+Permissions table (Y = allowed, N = not allowed):
+Action | Public | Viewer | Field | Command | Admin
+View help points, precautions, history, heroes, alerts | Y | Y | Y | Y | Y
+View live map, queue, dashboard | N | Y | Y | Y | Y
+Report a hazard (photo or SMS) | N | N | Y | Y | Y
+View own reports and assignments | N | N | Y | Y | Y
+Update progress on own assignment (On the way, Working, Done) | N | N | Y | Y | Y
+Verify or reject unverified reports | N | N | N | Y | Y
+Dispatch crew, Mark Assigned, Mark Cleared | N | N | N | Y | Y
+Override priority score (reason required) | N | N | N | Y | Y
+Update relief camp status and free beds | N | N | N | Y | Y
+Publish, edit or expire alerts | N | N | N | Y | Y
+Approve or hide hero stories | N | N | N | Y | Y
+Export incidents to CSV | N | N | N | Y | Y
+Edit Precautions and Cyclone History content | N | N | N | N | Y
+Manage users, crews, zones, help points | N | N | N | N | Y
+View activity log | N | N | N | N | Y
+Clear all data (with confirmation) | N | N | N | N | Y
+When a person taps something their role cannot do, show a short plain message such as "Only Command Officers can do this." Never leave a dead button.
+
+---------------------------------------------------------------------
+SECTION 3. DESIGN SYSTEM
+---------------------------------------------------------------------
+Visual direction: a premium, realistic, professional emergency-management product, like a modern municipal command dashboard combined with a public service portal. It must NOT look like a children's app, cartoon, infographic or generic template. Calm, bright, trustworthy, easy to understand in 5 seconds.
+
+Colours (use only these):
+- White #FFFFFF: main page background.
+- Light grey #F4F6FA: alternate sections and dashboard background.
+- Border #E2E7F0: thin borders and dividers.
+- Deep navy #101A3A: alert ticker, headings, dark panels, emergency contact strip.
+- Primary blue #2457C5: links, active menu item, selected chips, map controls, secondary buttons.
+- Emergency red #D32F2F: used ONLY for Report Hazard, critical severity, live-wire warnings and the emergency strip.
+- Amber #F2A900: warnings and pending status.
+- Green #16834A: cleared, available, relief camps, verified.
+- Text colour: navy #182338. Secondary text: grey #657187.
+- Soft tints for tiles: blue #EAF0FF, red #FDECEA, amber #FFF4DB, green #E8F5EC.
+Severity scale from the priority score: 9.0 and above = Critical (red), 7.0 to 8.9 = High (orange #EF6C00), 4.0 to 6.9 = Medium (amber), below 4.0 = Low (green). Severity is ALWAYS shown as colour + word + icon, never colour alone.
+
+Typography: Plus Jakarta Sans (or Inter) for English, Noto Sans Telugu for Telugu, Noto Sans Devanagari for Hindi, with system sans-serif fallbacks. Body text at least 16px. Hero headline 52px bold on desktop and 34px on mobile. Section titles 28px bold. Card titles 20px semibold. Large numbers (stats and priority scores) 36 to 44px extra-bold. Line-height 1.5 for body and 1.2 for headings.
+
+Shape and effects: 12 to 16px rounded corners on cards, 12px on buttons, fully rounded chips, 1px borders, soft shadows that lift slightly on hover. One icon family only (Lucide, 24px, 2px stroke), shown in soft tinted circles for feature tiles. No heavy gradients, no glassmorphism, no neon, no decorative patterns, no oversized decorative icons, no cartoon graphics.
+
+Imagery: the hero uses a realistic documentary-style photograph (licensed or a clearly marked placeholder) of a municipal clearance crew in reflective jackets removing a fallen tree from a wet coastal road after a storm, with palm trees, hills and an emergency vehicle in the background. A soft white-to-transparent fade on the left keeps text readable. All images need alt text. No photos of real identifiable people in the hero or in Our Heroes.
+
+Maps: real street-map appearance using MapLibre GL JS with OpenStreetMap raster or vector tiles, centred on Visakhapatnam (about 17.6868 N, 83.2185 E, zoom 11 to 12), with roads, labels, coast and terrain visible. If the tiles cannot load (offline), automatically switch to a clean local schematic map of Visakhapatnam showing the coast, main roads, hospital routes and zones, and show a small label "Offline map". Never show an empty grey map.
+
+Motion (small and purposeful): numbers count up on first load; critical pins pulse softly; cards lift 4px on hover; drawers and bottom sheets slide in; toasts fade in and out; the ticker scrolls slowly. No parallax, bouncing or spinning effects. If the user prefers reduced motion, turn all of this off and make the ticker static.
+
+---------------------------------------------------------------------
+SECTION 4. GLOBAL LAYOUT (appears on every page)
+---------------------------------------------------------------------
+A. LIVE ALERT TICKER (top, 40px, navy)
+- Left: a red pulsing dot and the label "LIVE".
+- Middle: alerts scrolling slowly from right to left. Each alert has a coloured dot (red critical, amber warning, green cleared), short text and a time ("2 min ago"). Examples: "Cyclone warning: Coastal Visakhapatnam", "Maddilapalem Junction: road blocked, live wire. Crew sent.", "Beach Road cleared."
+- Right: connection status text ("Online", "2G", "Offline") and a pause/play button.
+- Scrolling pauses on hover and on keyboard focus. Clicking an alert opens the related incident or alert. The ticker reads from the published alerts and the latest incident updates.
+
+B. HEADER (white, sticky below the ticker, 72px)
+- Left: logo (a blue map pin containing a leaf, minimal), the word "EcoTriage", and the small subtitle "Emergency Hazard Intelligence".
+- Centre menu: Home, Report, Live Map, Nearby Help, Precautions, Cyclone History, Our Heroes, About (plus role-specific items under a "More" or "Operations" dropdown). The active page is blue with a blue underline.
+- Right: connection pill (green Online, amber 2G, red Offline, with last-synced time), language selector (EN / తెలుగు / हिन्दी, each in its own script), text-size control (A A A), role badge with the user's name (or "Staff sign in" for public), and the red "Report Hazard" button.
+
+C. MOBILE LAYOUT (360, 390, 430px)
+- Compact header: logo, language icon, menu icon. A thin red alert strip below it showing the top alert.
+- Bottom tab bar with 5 items and labels: Home, Map, Help, Alerts, More. A floating red "Report" button sits above the bar on the right.
+- The full menu opens as a simple full-width list. Cards stack in one column. Filter chips scroll sideways inside their own row. The page never scrolls sideways. Touch targets are at least 48px. The main button is full width and 56px tall.
+
+D. FOOTER
+- Light blue-grey. Logo, page links, language switch, a navy button "Emergency Number 112" (tap to call), and the line "Demo version. Sample data. Connection states and scores are simulated."
+
+E. CONNECTION STATUS PANEL (shown on Home and Report)
+Five small status chips: Cellular (2G or Offline), Internet (Available or Unavailable), SMS Gateway (Demo Active), BLE Mesh (Demo Active), Local Map (Cached). Each has a distinct colour and icon. Add one line: "Connection states are simulated in this demo unless real hardware is connected." Connection status also follows the real browser state (navigator.onLine) for Online and Offline.
+
+---------------------------------------------------------------------
+SECTION 5. PAGES (build all 12, each linked from the navigation)
+---------------------------------------------------------------------
+
+PAGE 1. HOME
+1. Hero (full-width photo with left text): headline, sub-line, two large buttons side by side: solid red "Report Hazard" (camera icon) and white button with blue border "Find Help Nearby" (pin icon). Under them, three trust points with check icons: "Works offline", "Telugu, Hindi and English", "Priority sorted by AI".
+2. "Quick Access. Real Help." white panel floating on the right side of the hero (stacks below the hero on mobile) with 5 rows, each with an icon and an arrow: Emergency Contacts (opens the contacts strip), Live Map, Relief Camps, Alerts and Warnings, Languages and Accessibility (opens language and text-size settings).
+3. Four service cards in a white panel overlapping the bottom of the hero: Nearby Relief Camps (green), Medical Help (red), Safety Precautions (amber), Our Heroes (blue). Each has a small line icon, title, one short line and an arrow. Hover or focus: blue border and a gentle lift.
+4. Four live statistic cards with small sparklines: Total Reports, Critical Hazards (red), Response Crews (blue), Hazards Cleared (green). Values are calculated from the stored data, and numbers count up on load. Show "Sample" if the data is only sample records.
+5. Emergency strip (light red #FFF1F0, red left border): "Live wire or fully blocked road? Report it first. It gets the highest priority." with a red "Report Now" button. This is the only large red area on the page.
+6. Latest incidents: the 5 highest-priority open incidents as rows (colour bar, location, severity badge, priority number, status pill, time) with a small map on the right that highlights the pin of the hovered row. A "View full queue" link.
+7. How it works: 3 steps joined by a thin blue line: Take a photo, AI scores it, Crew is sent.
+8. Why it matters: 3 stat cards using these facts: (a) "Coastal storms in Visakhapatnam cause widespread tree uprooting and severe road disruption." Source: Times of India. (b) "Blocked roads cripple post-disaster transport and rescue logistics for days." Source: NIDM Report. (c) "National emergency geo-portals lack micro-level civic crowdsourced workflow tools." Source: NDEM. Plus one line "Built by Team Webuzz."
+
+PAGE 2. REPORT
+Purpose: let a field officer report a hazard in as few taps as possible, even offline.
+- Step indicator at the top: 1 Photo, 2 Place, 3 Send.
+- Two tabs: "Photo report" (default) and "SMS text report".
+- Photo report:
+  1) One huge red camera button "Take or choose photo". It opens the camera on phones (capture="environment") or the file picker on laptops. Show a preview with alt text and a "Retake" button.
+  2) Place: automatically request GPS. Show coordinates and a small map with a pin. If GPS is denied or unavailable, show "We could not find your location" and let the officer tap or drag a pin on the map, or choose a zone from a dropdown.
+  3) Hazard details with big icon buttons (one tap each): Road fully blocked, One lane blocked, Live wire, Tree, Pole, Water. Optional fields: a short note (with a microphone button for voice-to-text where the browser supports it, in the chosen language), road type dropdown (Hospital Route, Major Artery, Emergency Shelter, Industrial Lifeline, Transit Route, Standard Road, Commercial, Residential), zone dropdown.
+  4) Full-width red "Submit report" button (56px tall).
+- SMS text report: a large text box where the officer pastes or types a short message, for example "Big tree down at Maddilapalem, wires hanging" (English, Telugu, Hindi or mixed). Tapping "Read message" extracts location, obstruction and hazard into the same fields, shown for confirmation and editing before Submit. Add the helper line "Works with SMS text from the field."
+- Submit flow: validate (see Section 11), show "Analysing hazard..." with a skeleton card, then show the AI RESULT CARD (Section 8) and buttons "View on map" and "Report another".
+- Offline behaviour: if there is no network, save the report in localStorage with status "Queued", compute a simple rule-based score (Section 8), and show an amber message: "Saved. Will send when network returns." When the browser comes back online, automatically sync queued reports, replace the rule score with the AI score when possible, show a green toast "Queued reports sent", and update the last-synced time.
+- A "?" help icon next to the main button opens a 2-line explanation.
+
+PAGE 3. LIVE MAP (command view)
+- Desktop: split layout. Left 360px panel with a search box (location or ID), filter chips (All, Critical, Pending, Hospital Routes, Relief Camps, Assigned, Cleared) and the incident list sorted by priority (highest first). Right: the large map. Selecting a list item flies the map to its pin and highlights it.
+- Mobile: full-screen map with a draggable bottom sheet holding the list. Filter chips float at the top of the map.
+- Pins: hazard pins are round circles containing the priority number, coloured by severity. Critical pins pulse softly. Help points (relief camps, hospitals, depots) are square pins with a category icon (green for camps, blue for services). Cluster pins when zoomed out, with the count and the highest severity colour.
+- Map controls: zoom in and out, "My location" (centres on GPS with a blue dot), a layer toggle (Hazards, Help points, Hospital routes), a legend card ("Hazard types": Fully blocked, One lane, Live wire, Other) and a "Live updates" card listing the 3 latest changes (for example "2 min ago: Road cleared near Beach Road").
+- Filters update the pins, the list and the visible count at the same time.
+- Hospital routes are drawn as a blue line layer between sample hospitals and main roads. A hazard on a hospital route gets the "Hospital Route" label.
+- A floating red "Report Hazard" button sits in the corner.
+- Tapping a pin or a list item opens the TRIAGE DRAWER.
+- Empty state: "No incidents match these filters." with a "Clear filters" button. Loading: skeleton list and a map placeholder. Error: "We could not load the map." with a "Try again" button and automatic fallback to the schematic map.
+
+PAGE 4. TRIAGE DRAWER (opens from the map, the queue, the ticker and the home list)
+- Desktop: slides in from the right, 420px wide. Mobile: bottom sheet that can be pulled up to full height. Close with the X button, the Escape key or by tapping outside.
+- Content, top to bottom:
+  1) Photo with alt text (or a placeholder for sample records), hazard ID, location name, "Sample" label if it applies.
+  2) Large priority score (44px) with the severity badge (colour, word, icon) and a small "?" help icon explaining the score.
+  3) Red warning banner if a live wire is present: "Danger: electric wire. Keep away."
+  4) AI analysis card: obstruction (Fully blocked or One lane), hazard flags, road type, and the AI recommendation in the chosen language.
+  5) Details grid: zone, status, source (Photo, SMS or Sample), verified yes or no, reported by, GPS coordinates, recommended equipment (for example PWD heavy unit, tree cutter, State Electricity Board team).
+  6) "Nearest help" card: the closest depot, relief camp and hospital with distance and a "Route" button.
+  7) Status timeline: Reported, Verified, Assigned, On the way, Working, Cleared, each with who and when.
+  8) Priority history: shows any overrides, for example "Changed by Ravi, was 6.5, now 9.0. Reason: next to hospital gate."
+  9) Action buttons (role-controlled): red "Send Crew" (opens a small list of free crews to choose from), blue outline "Send Electricity Board", "Mark Assigned", "Mark Cleared", and for Command Officers "Change priority" (requires a one-line reason).
+- Every action updates the status instantly, writes to the history and activity log, refreshes the map pin, queue and stats, and shows a green toast such as "Crew sent. Queue updated."
+- Buttons the role cannot use are hidden or show the permission message.
+
+PAGE 5. QUEUE
+- Stats strip: total reports, Critical count, Pending count, average AI processing time (under 30s).
+- Filter chips (same as the map) and a "Cards / Table" toggle on desktop.
+- Incidents are sorted automatically by priority score, highest first. Ties are sorted by newest first. Each card shows: location, big priority number, severity badge, obstruction, hazard flag, status pill, "Sample" or "Unverified" label, time. Tapping a card opens the Triage Drawer.
+- Empty state: "No reports yet. Report a hazard." with a red button. Loading: skeleton cards. Error: friendly message and "Try again".
+
+PAGE 6. NEARBY HELP (relief camps, medical and support)
+- Category chips: Relief Camps, Hospitals, First Aid, Ambulance, Fire Stations, Water and Food Points, Depots. Each has its own icon.
+- Layout: left list, right map (map first on mobile with the list in a bottom sheet). The list is sorted by distance from the user's GPS position (or from the map centre if GPS is unavailable) and shows the distance in km.
+- Each help card shows: name, category icon, distance, address, status badge (Open, Almost full, Full, Closed), last updated time, phone number with a "Call" button (tel: link), "Get Directions" button (opens the map route), "Show on map" button, and a "Sample" label.
+- Relief camp cards also show beds free out of capacity with a capacity bar (for example "120 of 300 beds free") and facility icons: food, drinking water, medical, power, toilets, women and child space.
+- Route safety: when showing directions, check hazards near the route. If a Critical or High hazard is on or near the road, show an amber banner "Warning: [road name] is blocked. Use another road."
+- Fixed navy emergency contacts strip at the bottom of the page with large call buttons: 112 Emergency, 108 Ambulance, 101 Fire Services, and "Municipal control room" (placeholder number marked Sample).
+- Command Officers and Admins see an "Update" button on camp cards to change status and free beds in two taps. Updates are logged.
+- All help data is saved in localStorage so the page works offline, with the label "Saved offline. Last updated 10:42."
+- Empty state: "No help points found nearby. Try a wider area." with a "Show all" button.
+
+PAGE 7. PRECAUTIONS
+- Three tabs: Before Cyclone, During Cyclone, After Cyclone.
+- Each tab shows information cards with a small line icon or photo thumbnail, a bold title and 2 to 3 short lines in plain words. Topics: secure your home, prepare an emergency kit (water, food, torch, radio, medicines, documents), stay indoors, stay away from windows, avoid fallen electric wires, drink boiled or treated water, avoid flooded roads, check on neighbours, listen to official updates.
+- A prominent red panel on every tab: "Stay away from fallen electric wires. Report electrical hazards immediately." with a red "Report Hazard" button.
+- A small note: "Sample guidance. Always follow official advice from the disaster management authority."
+- Content is fully translated into Telugu and Hindi. Admins can edit it in the Content Manager.
+
+PAGE 8. CYCLONE HISTORY AND ARTICLES
+- Layout: a year filter (dropdown and chips), a vertical timeline of cyclone cards, small map thumbnails, and an "Articles and Reports" section.
+- Each cyclone card: name, year, short impact summary (2 lines), affected area, a map thumbnail, "Lessons learned" (1 line) and a "Source" link.
+- Each article card: title, publishing source, date, short summary and a "Read more" link that opens the original source in a new tab.
+- Accuracy rule: use only facts that can be verified from official or reputable sources (India Meteorological Department, National Disaster Management Authority, state and district disaster management authorities, reputable news). Show the source on every card. Cyclone Hudhud (October 2014), which struck the Visakhapatnam coast, should be included as the main example. Do not invent statistics, damage figures or dates. If a detail cannot be verified, leave it out or mark the card "Sample" with a placeholder source.
+- Admins can add, edit and remove history cards and articles in the Content Manager (a source field is required).
+- Empty state: "No cyclones match this year." with a "Show all years" button.
+
+PAGE 9. OUR HEROES
+- Purpose: thank the people who worked hard during cyclones: municipal workers, electricity board crews, fire and rescue teams, medical staff, police and volunteers.
+- Top: "Hero of the Month" featured card (large avatar, name, role, department, 3-line story, "Thank you" button).
+- Filter chips: All, Municipal, Electricity, Fire and Rescue, Medical, Police, Volunteers.
+- Grid of hero profile cards (4 columns on desktop, 1 on mobile). Each card: flat, consistent illustrated avatar (no photographs of real people), name, role, department badge, a two-line contribution story and a heart "Thank you" button with a count. Tapping a card opens the full story in a drawer. A thank-you count can be increased once per device (store in localStorage).
+- "Suggest a hero" button: anyone can send a name, role, department and short story (no photo). It is saved as "Pending" and is not visible to the public until a Command Officer or Admin approves it.
+- All preloaded heroes are fictional and labelled "Sample". Real names and photos may only be used later with written permission, and the page notes this.
+- Command Officers and Admins see Approve, Hide and Edit buttons.
+
+PAGE 10. ALERTS AND WARNINGS
+- Filter tabs: All, Weather, Flood, Road, Other.
+- Alert cards: a red card for severe warnings (for example "Cyclone Warning, Coastal Visakhapatnam. High risk of heavy rainfall and strong winds."), amber cards for advisories, each with issued time, source label, and expiry.
+- Published alerts also scroll in the top ticker.
+- Command Officers see an "Alerts Manager": a form with type, severity (Warning, Advisory, Info), message (in English, with optional Telugu and Hindi), source and expiry time, a preview, and "Publish". They can edit or expire an alert. Every change is logged.
+- Empty state: "No active alerts. You will see updates here."
+
+PAGE 11. DASHBOARD (Viewer, Field, Command, Admin)
+- Dark navy left sidebar: Dashboard, Reports, Live Map, Resources, Users (Admin), Analytics, Settings (Admin). On mobile the sidebar becomes a menu.
+- Top row: stat cards (Total Reports, Critical, Pending, Crews Free, Cleared today) with a "Last 7 days" selector.
+- Charts (drawn from the stored data): hazard trend bar chart for the last 7 days, severity breakdown, status breakdown, and average time from report to assignment.
+- Panels: crews (Free or Busy by type), relief camp capacity summary, recent activity.
+- Command Officers see "Export to CSV" for incidents. Admins also see the Activity Log (who, what, when, filterable by user and date).
+- Viewers see everything read-only.
+
+PAGE 12. ABOUT
+- Team Webuzz, the problem, the solution, what makes it different ("No existing tool combines lightweight AI image parsing of blockages with rule-based municipal emergency prioritization in a fast, offline-capable web dashboard."), why it matters (the 3 stat cards), and the pitch line: "EcoTriage transforms post-disaster road clearance by using AI and GIS mapping to turn chaotic reports into an instant, prioritized municipal command dashboard."
+- Business model line (information only, no payment): "Annual municipal SaaS licence, Rs 5,00,000 per city corporation per year."
+- Stats strip: incident reports ingested (count), AI processing time (under 30 seconds, show the real average from stored results), average dispatcher session time (measured from sign-in to sign-out in the browser).
+- The demo sign-in note. "Clear my data" button (Admin only) that asks for confirmation ("This will delete your saved reports and settings on this device. Continue?") and then resets to the sample data.
+
+ROLE-ONLY SCREENS
+- MY REPORTS (Field Officer): the officer's own reports with status.
+- MY ASSIGNMENTS (Field Officer): cards of hazards assigned to the officer or squad, sorted by priority, each with large buttons "On the way", "Working", "Done". Each tap updates the status for everyone and adds to the timeline.
+- VERIFY REPORTS (Command Officer): list of Unverified reports with photo, place and score, and buttons "Verify" (green) and "Reject" (asks for a reason).
+- CONTENT MANAGER (Admin): edit Precautions, Cyclone History and Articles, and review hero suggestions.
+- USERS (Admin): add a user, change role, assign a zone, deactivate. CREWS (Admin): name, type (PWD Heavy Unit, Electricity Board, Fire and Rescue), status (Free or Busy), assigned incident. ZONES: the list of Visakhapatnam zones used in dropdowns. HELP POINTS: add or edit camps, hospitals and depots.
+
+---------------------------------------------------------------------
+SECTION 6. LANGUAGE AND SIMPLE-WORDS MODE
+---------------------------------------------------------------------
+Goal: any person with basic reading skills understands every screen in seconds, in their own language.
+- Languages: English, తెలుగు (Telugu), हिन्दी (Hindi). The selector shows each language in its own script. The choice is saved in localStorage.
+- Translate EVERYTHING: menus, buttons, labels, statuses, severity words, error messages, empty states, role names, permission messages and precaution content. Use proper Telugu and Hindi, with no placeholder text and no mixed untranslated words. Keep all translations in one file (a translation table) so they are easy to review.
+- "Simple words" toggle (on by default): short sentences (8 to 10 words), everyday words, one idea per sentence, buttons start with a verb. Replacements: "Complete Block" becomes "Road fully blocked", "Single Lane" becomes "One lane blocked", "Live Electrical Wire" becomes "Danger: electric wire", "Priority score 9.8" becomes "Urgent: 9.8 out of 10", "Queued" becomes "Saved. Will send when network returns", "Dispatch PWD Heavy Unit" becomes "Send heavy machine team".
+- Every important word has an icon next to it. Errors say what happened and what to do, in one short sentence: "No photo yet. Tap the red button to take one."
+- Text size control (A A A) with three sizes. Voice input (browser speech recognition) on note and SMS fields in the selected language, hidden if unsupported.
+- The AI reads notes in English, Telugu, Hindi or mixed text (including Telugu written in English letters).
+
+---------------------------------------------------------------------
+SECTION 7. OFFLINE-FIRST BEHAVIOUR
+---------------------------------------------------------------------
+- Register a service worker that caches the app shell, translation table, sample data, help points and the schematic map so the app opens with no network.
+- All data lives in localStorage (and IndexedDB for photos, compressed to about 1 MB each). The app reads from local data first.
+- New reports made offline are saved with status "Queued", a rule-based score and a "Queued" badge. A banner shows how many reports are waiting. When the connection returns, they sync automatically (retry with a short delay if a send fails), then the badge changes to Pending and the AI score replaces the rule score when available.
+- The header connection pill shows Online, 2G (slow network, using navigator.connection when available) or Offline, with the last-synced time.
+- Simulated SMS Gateway and BLE Mesh status chips are demo-only and must say so.
+
+---------------------------------------------------------------------
+SECTION 8. AI FEATURE (Gemini API, ONE feature)
+---------------------------------------------------------------------
+Purpose: read a field photo (and the optional note or SMS text) and return the obstruction type, hazard flag, priority score and recommendation.
+
+Security: the Gemini API key must NEVER appear in frontend code. Call Gemini from a small server-side function (serverless function or backend route) that reads the key from an environment variable (for example GEMINI_API_KEY). The browser sends the photo (compressed to about 1 MB) and the text to this function.
+
+Model: use a current Gemini multimodal model that supports image input and JSON output (a Flash-class model is fine). Request structured JSON output with temperature 0.2.
+
+Instruction text to send:
+"You are an emergency road-clearance triage assistant for a municipal corporation in Visakhapatnam, India. You will receive a field photo of a road blockage after a cyclone, plus an optional note that may include the location and road type. Analyse the image and the note. Reply ONLY with valid JSON in exactly this shape: {"obstruction": "complete_block" | "single_lane" | "clear", "hazard": "live_electrical_wire" | "none", "priority_score": number from 0 to 10, "recommendation": "one short sentence"}. Score higher for complete blocks, live electrical wires, hospital routes, emergency shelters and major arteries. Score lower for single-lane blocks on residential roads. The user's language is {LANGUAGE}. Write the recommendation in {LANGUAGE}, in very simple words, in one short sentence a person with basic reading skills can understand. Keep the JSON keys and the values for obstruction and hazard in English exactly as specified. Only the recommendation text changes language. No extra text."
+
+Example input: a photo of a banyan tree blocking two lanes with a visible sagging electrical line on Maddilapalem highway.
+Example output: {"obstruction": "complete_block", "hazard": "live_electrical_wire", "priority_score": 9.8, "recommendation": "Dispatch PWD heavy unit + State Electricity Board."}
+
+Handling the response:
+- Parse the JSON safely (strip any code fences). Check that every field exists and the values are allowed. If invalid, treat it as a failure.
+- Combine with the road type chosen by the user: add a small rule-based boost if the road type is Hospital Route, Emergency Shelter, Major Artery or Industrial Lifeline, and cap the final score at 10. Show "AI score" and "Final priority".
+- Show the result as an AI RESULT CARD, never as raw JSON: a large score ring with the number, the severity badge (colour, word, icon), the obstruction label, a red warning banner if the hazard is a live wire, the recommendation in the chosen language, and the equipment to send.
+- Loading state: "Analysing hazard..." with a skeleton card (target under 30 seconds; time out at 30 seconds).
+- Failure state (network, timeout or invalid JSON): a friendly message "We couldn't analyse this photo", a "Try again" button and a "Use rule-based score instead" button.
+- Rule-based score (used offline and as a fallback): start at 3; add 3 if the road is fully blocked, add 1.5 if one lane is blocked; add 2.5 for a live wire; add 1.5 for Hospital Route or Emergency Shelter, 1.2 for Major Artery or Industrial Lifeline, 0.5 for Transit Route; cap at 10; round to one decimal.
+- Record the processing time of every call and use it for the average shown on the Queue, Dashboard and About pages.
+- If the language is changed after a result is shown, re-display the card in the new language by using the translation table for labels, keeping the saved recommendation text, without calling the AI again.
+
+---------------------------------------------------------------------
+SECTION 9. DATA
+---------------------------------------------------------------------
+Storage: localStorage (and IndexedDB for photos). On first open, load the sample data below. Everything the user does is saved and survives a refresh. "Clear my data" (Admin, with confirmation) resets to the sample data.
+
+Incident fields: id, location, lat, lng, obstruction (complete_block | single_lane | clear), hazard (live_electrical_wire | none), priority_score, severity, roadType, zone, status (Pending | Assigned | On the way | Working | Cleared | Queued), source (Photo | SMS | Sample), equipment, createdAt, updatedAt, photo, note, reportedBy, verified (true or false), assignedTo, lastUpdatedBy, history (list of events), priorityHistory (list of overrides), sample (true or false).
+
+Preload these 10 incidents, each labelled "Sample" (coordinates are approximate and for demo only):
+1. Maddilapalem Junction | Complete Block | Live Wires | 9.8 | Hospital Route | Pending | 17.7385, 83.3150
+2. Beach Road, RK Beach | Single Lane | Clear | 4.2 | Residential | Cleared | 17.7120, 83.3230
+3. MVP Colony Sector 4 | Complete Block | Clear | 6.5 | Standard Road | Assigned | 17.7410, 83.3330
+4. Seethammadhara North | Complete Block | Live Wires | 9.5 | Emergency Shelter | Pending | 17.7450, 83.3060
+5. DAB Gardens Main Road | Single Lane | Clear | 3.1 | Commercial | Cleared | 17.7150, 83.3000
+6. Siripuram Circle | Complete Block | Clear | 8.9 | Major Artery | Assigned | 17.7220, 83.3180
+7. Waltair Uplands | Single Lane | Clear | 5.0 | Residential | Pending | 17.7230, 83.3050
+8. Gajuwaka Steel Plant Rd | Complete Block | Live Wires | 9.2 | Industrial Lifeline | Pending | 17.6850, 83.2100
+9. Akkayyapalem 100ft Rd | Complete Block | Clear | 7.8 | Transit Route | Assigned | 17.7390, 83.2900
+10. Dwaraka Nagar 4th Lane | Single Lane | Clear | 4.0 | Commercial | Cleared | 17.7240, 83.3040
+
+Help points (8 Sample records, fictional names, approximate coordinates, all labelled "Sample"): fields are id, name, category (relief_camp | hospital | first_aid | ambulance | fire_station | water_food | depot), lat, lng, address, phone (placeholder), status, capacity, capacityFree, facilities, updatedAt, sample. Create: 2 relief camps (for example "Sample Relief Camp, Beach Road School" and "Sample Community Hall, Gajuwaka"), 2 hospitals, 1 fire station, 1 water and food point, 2 depots (one for PWD heavy units, one for the Electricity Board). Do not present them as real, confirmed facilities.
+
+Other lists: users (4 Sample users), crews (one Sample crew per type, more optional), zones, alerts (3 Sample alerts), cycloneHistory and articles (verified facts only, with sources, otherwise labelled Sample), heroes (8 fictional Sample heroes across the 6 departments), heroSuggestions, assignments, activityLog.
+
+Activity log records: sign-ins, reports created, verified or rejected, dispatches, status changes, priority overrides, alerts published, help-point updates, hero approvals, user changes, data cleared. Each entry has who, what, when.
+
+---------------------------------------------------------------------
+SECTION 10. STATES AND VALIDATION
+---------------------------------------------------------------------
+Every page and every data-driven component has three states:
+- Loading: grey skeleton cards (not spinners).
+- Empty: a simple icon, one friendly line and one action button.
+- Error: a friendly one-sentence message and a "Try again" button.
+Validation with clear, specific, translated messages: no photo ("No photo yet. Tap the red button to take one."), file is not an image, file larger than 10 MB (compress or reject), no location chosen, empty SMS text, empty reason for a priority override or rejection, empty required fields in admin forms, PIN not 4 digits. Show errors next to the field and move focus to the first error.
+
+---------------------------------------------------------------------
+SECTION 11. ACCESSIBILITY AND QUALITY
+---------------------------------------------------------------------
+- A visible label on every input. Keyboard-friendly navigation with a visible focus outline. Alt text on every image. WCAG AA contrast. Touch targets at least 48px; the main button 56px tall.
+- Severity always uses colour + word + icon.
+- Semantic HTML (header, nav, main, footer), ARIA labels on icon-only buttons, and an aria-live region for toasts and status changes.
+- No horizontal scrolling at 360, 390, 430, 768 and 1440px (only intentional chip rows scroll sideways).
+- No broken buttons, no dead links, no console errors. Every button does something real.
+- Code organised into small components with clear names and short comments (for example Ticker, Header, BottomNav, ReportForm, AIResultCard, MapView, TriageDrawer, IncidentCard, HelpCard, PrecautionCard, CycloneCard, HeroCard, StatCard, Toast, Skeleton, RoleGate, LanguageProvider).
+
+---------------------------------------------------------------------
+SECTION 12. SUGGESTED TECHNICAL SETUP
+---------------------------------------------------------------------
+- React with Vite and Tailwind CSS (or any equivalent modern stack), React Router for pages, MapLibre GL JS for maps, Lucide icons, a small chart library for the dashboard, a service worker for offline use.
+- One serverless function (or small backend route) named analyse-hazard that holds the Gemini key in an environment variable.
+- One translation file for English, Telugu and Hindi. One data file for sample records. One storage helper for localStorage and IndexedDB. One permissions file that holds the role table so every screen uses the same rules.
+- Deployable to a static host with a serverless function (for example Vercel or Netlify). Provide the environment variable name and setup steps in the README.
+
+---------------------------------------------------------------------
+SECTION 13. HOW TO WORK (follow in this order)
+---------------------------------------------------------------------
+Step 1: Show a short plan: pages, components, data structure, role table, and the exact Gemini prompt. Wait for no approval; continue.
+Step 2: Build the shared shell first: design tokens, ticker, header, bottom nav, footer, language provider, role provider, storage helpers, toast and skeleton components.
+Step 3: Build pages in this order: Home, Report (with the AI result card and offline queue), Live Map with the Triage Drawer, Queue, Nearby Help, Precautions, Cyclone History, Our Heroes, Alerts, Dashboard, About, then the role-only screens.
+Step 4: Run it in the preview. Test at 360px and 1440px. Fix any overflow, contrast or console error.
+Step 5: Give me: (a) a 5-step test checklist that covers reporting a hazard, going offline and syncing, filtering the map, dispatching from the drawer, and switching language and role; (b) a short README (what it does, how to run, how to deploy, how to set the API key); (c) 5 ideas for the next version.
+
+FINAL QUALITY BAR
+The result must look and behave like a production-quality civic emergency platform made by a professional product team: calm, trustworthy, fast, clear in an emergency, and honest about what is demo data.
+D. FOOTER (appears on every page)
+
+Style: light blue-grey background (#F4F6FA), a 1px top border (#E2E7F0), navy text, 16px body text, generous padding (48px top and bottom on desktop, 32px on mobile). Same fonts, icons and corner radius as the rest of the app.
+
+Desktop layout (4 columns, max width 1200px):
+1) Brand column: EcoTriage logo (map pin with leaf), the name, "Emergency Hazard Intelligence", and one line: "Keep Emergency Routes Moving. Even When Networks Go Dark." Below it, "Built by Team Webuzz, Visakhapatnam."
+2) Quick links column ("Explore"): Home, Report Hazard, Live Map, Queue, About.
+3) Help and information column ("Get help"): Nearby Relief Camps, Medical Help, Safety Precautions, Cyclone History, Our Heroes, Alerts and Warnings.
+4) Emergency column ("Emergency"): a navy card with a large white button "Call 112" (tap to call), and smaller call buttons for 108 Ambulance and 101 Fire Services. Under the card, the line "In danger? Call 112 first."
+
+Below the columns, a thin divider and a bottom bar with three parts:
+- Left: language switch (EN / తెలుగు / हिन्दी) and the text-size control (A A A).
+- Centre: connection status ("Online", "2G" or "Offline") with the last-synced time.
+- Right: the legal and demo line: "Demo version. Sample data. Connection states and scores are simulated. Not an official government service."
+- Below that, small links: "Staff sign in", "Privacy note", "Accessibility". Each opens a simple page or a drawer with a short text (the privacy note says "Data stays on this device in this demo").
+- Copyright line: "© 2026 Team Webuzz. EcoTriage prototype."
+
+Mobile layout (360 to 430px):
+- Columns stack in one column. Link groups become collapsible sections (tap to open) with 48px tall headers.
+- The Emergency card comes first, full width, with 3 large call buttons side by side (112, 108, 101).
+- Language switch, text-size control and connection status sit in one row that wraps.
+- The footer must not hide behind the bottom tab bar: add bottom padding equal to the tab bar height.
+
+Role-aware items:
+- Public: the links above.
+- Signed-in staff: the "Staff sign in" link changes to the user's name, a role badge and "Sign out". Command and Admin users also see "Export" and "Activity Log" links.
+
+Rules:
+- Every footer link and button works (no dead links). Phone numbers use tel: links. 112 is the real national emergency number; the municipal control-room number is a placeholder marked "Sample".
+- All footer text exists in English, Telugu and Hindi.
+- Visible keyboard focus on every link, alt text on the logo, and contrast that passes WCAG AA.
+- No government emblem, flag or real agency logo in the footer.

@@ -1,0 +1,10 @@
+{
+  "name": "EcoTriage",
+  "description": "Emergency hazard intelligence and civic response web platform for post-cyclone road clearance in Visakhapatnam.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
